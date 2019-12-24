@@ -17,8 +17,22 @@
  */
 package org.linqs.psl.evaluation.statistics;
 
+import org.junit.Before;
+
 import static org.junit.Assert.assertEquals;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.database.DataStore;
+import org.linqs.psl.database.Database;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.database.loading.Inserter;
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
@@ -27,6 +41,66 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
     @Override
     protected RankingEvaluator getComputer() {
         return new RankingEvaluator();
+    }
+
+    @Before
+    public void setUp() {
+        // overload default training map to test ranking evaluations
+        dataStore = new RDBMSDataStore(new H2DatabaseDriver(
+                H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
+
+        predicate = StandardPredicate.get(
+                "RankingPredictionTest_query_rank"
+                , new ConstantType[]{ConstantType.UniqueIntID, ConstantType.UniqueIntID}
+        );
+        dataStore.registerPredicate(predicate);
+
+        Partition targetPartition = dataStore.getPartition("targets");
+        Partition truthPartition = dataStore.getPartition("truth");
+
+        // Create some canned ground inference atoms
+        Constant[][] cannedTerms = new Constant[8][];
+        cannedTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
+        cannedTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
+        cannedTerms[2] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(3) };
+        cannedTerms[3] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(4) };
+        cannedTerms[4] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(1) };
+        cannedTerms[5] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
+        cannedTerms[6] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(3) };
+        cannedTerms[7] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(4) };
+
+        // Insert the predicated values.
+        Inserter inserter = dataStore.getInserter(predicate, targetPartition);
+        for (Constant[] terms : cannedTerms) {
+            inserter.insertValue(0.8, terms);
+        }
+
+        // create some ground truth atoms
+        Constant[][] baselineTerms = new Constant[7][];
+        baselineTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
+        baselineTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
+        baselineTerms[2] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(3) };
+        baselineTerms[3] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(4) };
+        baselineTerms[4] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(1) };
+        baselineTerms[5] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
+        baselineTerms[6] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(3) };
+
+        // Insert the truth values.
+        inserter = dataStore.getInserter(predicate, truthPartition);
+        for (Constant[] terms : baselineTerms) {
+            inserter.insertValue(1.0, terms);
+        }
+
+        // Redefine the truth database with no atoms in the write partition.
+        Database results = dataStore.getDatabase(targetPartition);
+        Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+
+        PersistedAtomManager atomManager = new PersistedAtomManager(results);
+        trainingMap = new TrainingMap(atomManager, truth, true);
+
+        // Since we only need the map, we can close all the databases.
+        results.close();
+        truth.close();
     }
 
     @Test
@@ -65,6 +139,24 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
             RankingEvaluator computer = new RankingEvaluator(threshold);
             computer.compute(trainingMap, predicate);
             double value = computer.negativeAUPRC();
+
+            if (threshold <= 0.8) {
+                assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
+            } else {
+                assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
+            }
+        }
+    }
+
+    @Test
+    public void testMeanAveragePrecision() {
+        // Build new training map to test meanAveragePrecision
+
+        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+            RankingEvaluator computer = new RankingEvaluator();
+            computer.compute(trainingMap, predicate);
+            double value = computer.meanAveragePrecision();
+            System.out.println(trainingMap.getTruthAtoms());
 
             if (threshold <= 0.8) {
                 assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);

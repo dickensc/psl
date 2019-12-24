@@ -25,10 +25,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.MathUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Compute various ranking statistics.
@@ -182,13 +179,13 @@ public class RankingEvaluator extends Evaluator {
             double newY = tp / (double)(tp + fp);
             double newX = tp / (double)totalPositives;
 
-            area += 0.5 * (newX - prevX) * (newY + prevY);
+            area += 0.5 * (newX - prevX) * Math.abs(newY - prevY) + (newX - prevX) * newY;
             prevY = newY;
             prevX = newX;
         }
 
         // Add the final piece.
-        area += 0.5 * (1.0 - prevX) * (0.0 + prevY);
+        area += 0.5 * (1.0 - prevX) * Math.abs(0.0 - prevY) + (1.0 - prevX) * 0;
 
         return area;
     }
@@ -241,7 +238,7 @@ public class RankingEvaluator extends Evaluator {
 
             double newX = tn / (double)totalNegatives;
 
-            area += 0.5 * (prevX - newX) * (prevY + newY);
+            area += 0.5 * (prevX - newX) * Math.abs(newY - prevY) + (prevX - newX) * newY;
             prevY = newY;
             prevX = newX;
         }
@@ -280,7 +277,7 @@ public class RankingEvaluator extends Evaluator {
             }
 
             // Assume we predicted everything positive.
-            if (label != null && label) {
+            if (label) {
                 tp++;
             } else {
                 fp++;
@@ -289,15 +286,100 @@ public class RankingEvaluator extends Evaluator {
             double newY = (double)tp / (double)totalPositives;
             double newX = (double)fp / (double)totalNegatives;
 
-            area += 0.5 * (newX - prevX) * (newY + prevY);
+            area += 0.5 * (newX - prevX) * Math.abs(newY - prevY) + (newX - prevX) * newY;
             prevY = newY;
             prevX = newX;
         }
 
         // Add the final piece.
-        area += 0.5 * (1.0 - prevX) * (1.0 + prevY);
+        area += 0.5 * (1.0 - prevX) * Math.abs(1.0 - prevY) + (1.0 - prevX) * 1.0;
 
         return area;
+    }
+
+    /**
+     * Returns area mean Average Precision.
+     * Assumes predicted GroundAtoms are hard truth values.
+     * Assumes predicted GroundAtoms are formatted as (query, rank)
+     */
+    public double meanAveragePrecision() {
+        // hashtable to hold the number of ground truth positives for each query
+        Map<String, Integer> totalPositives = new Hashtable<>();
+
+        for (GroundAtom atom : truth) {
+            if (atom.getValue() > threshold) {
+                String queryId = atom.getArguments()[0].toString();
+                if (totalPositives.containsKey(queryId)) {
+                    totalPositives.put(queryId, (totalPositives.get(queryId) + 1));
+                } else {
+                    totalPositives.put(queryId, 0);
+                }
+            }
+        }
+
+        // find the average precision for each query. Note that the predictions are already sorted
+        // hashtables to hold the true positives seen so far, the position, the running sum of precisions, and
+        // the average precision for each query
+        Map<String, Integer> TPSeen = new Hashtable<>();
+        Map<String, Integer> Position = new Hashtable<>();
+        Map<String, Double> SumP = new Hashtable<>();
+        Map<String, Double> AveP = new Hashtable<>();
+
+        for (GroundAtom atom : predicted) {
+            Boolean label = getLabel(atom);
+            String queryId = atom.getArguments()[0].toString();
+
+            if (label == null) {
+                continue;
+            }
+
+            // always update query position
+            if (Position.containsKey(queryId)) {
+                Position.put(queryId, (Position.get(queryId) + 1));
+            } else {
+                Position.put(queryId, 1);
+            }
+
+            // only update the TPSeen count and the running precision sum if the document is relevant
+            if (label) {
+                if (TPSeen.containsKey(queryId)) {
+                    TPSeen.put(queryId, (TPSeen.get(queryId) + 1));
+                } else {
+                    TPSeen.put(queryId, 1);
+                }
+
+                if (SumP.containsKey(queryId)) {
+                    SumP.put(queryId, (SumP.get(queryId) + ((double) TPSeen.get(queryId) / Position.get(queryId))));
+                } else {
+                    SumP.put(queryId, 1.0);
+                }
+            }
+        }
+
+        // Calculate the average precision for each query
+        for (Map.Entry<String, Double> entry : SumP.entrySet()) {
+            AveP.put(entry.getKey(), (entry.getValue() / totalPositives.get(entry.getKey())));
+        }
+
+        // Calculate the mean average precision over all the queries
+        double MAP = 0.0;
+        int NQ = 0;
+
+        for (Map.Entry<String, Double> entry : AveP.entrySet()) {
+            MAP = MAP + entry.getValue();
+            NQ = NQ + 1;
+        }
+        MAP = MAP / (double)NQ;
+
+//        for (GroundAtom atom : truth) {
+//            System.out.println(atom.getValue());
+//        }
+//        for (GroundAtom atom : predicted) {
+//            System.out.println(atom.getValue());
+//        }
+//        System.out.println(truth);
+//        System.out.println(predicted);
+        return MAP;
     }
 
     @Override
