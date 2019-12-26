@@ -20,10 +20,7 @@ package org.linqs.psl.evaluation.statistics;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.*;
 
@@ -34,7 +31,10 @@ public class RankingEvaluator extends Evaluator {
     public enum RepresentativeMetric {
         AUROC,
         POSITIVE_AUPRC,
-        NEGATIVE_AUPRC
+        NEGATIVE_AUPRC,
+        MEAN_AP,
+        DCG,
+        NDCG
     }
 
     /**
@@ -104,6 +104,8 @@ public class RankingEvaluator extends Evaluator {
                 continue;
             }
 
+            System.out.println(entry.toString());
+
             truth.add(entry.getValue());
             predicted.add(entry.getKey());
         }
@@ -121,6 +123,12 @@ public class RankingEvaluator extends Evaluator {
                 return positiveAUPRC();
             case NEGATIVE_AUPRC:
                 return negativeAUPRC();
+            case MEAN_AP:
+                return meanAveragePrecision();
+            case DCG:
+                return discountedCumulativeGain();
+            case NDCG:
+                return normalizedDiscountedCumulativeGain();
             default:
                 throw new IllegalStateException("Unknown representative metric: " + representative);
         }
@@ -164,7 +172,7 @@ public class RankingEvaluator extends Evaluator {
 
         // Go through the atoms from highest truth value to lowest.
         for (GroundAtom atom : predicted) {
-            Boolean label = getLabel(atom);
+            Boolean label = getTruthLabel(atom);
             if (label == null) {
                 continue;
             }
@@ -220,7 +228,7 @@ public class RankingEvaluator extends Evaluator {
 
         // Go through the atoms from highest truth value to lowest.
         for (GroundAtom atom : predicted) {
-            Boolean label = getLabel(atom);
+            Boolean label = getTruthLabel(atom);
             if (label == null) {
                 continue;
             }
@@ -271,7 +279,7 @@ public class RankingEvaluator extends Evaluator {
 
         // Go through the atoms from highest truth value to lowest.
         for (GroundAtom atom : predicted) {
-            Boolean label = getLabel(atom);
+            Boolean label = getTruthLabel(atom);
             if (label == null) {
                 continue;
             }
@@ -306,16 +314,21 @@ public class RankingEvaluator extends Evaluator {
         // hashtable to hold the number of ground truth positives for each query
         Map<String, Integer> totalPositives = new Hashtable<>();
 
+//        System.out.println(truth.toString());
+
         for (GroundAtom atom : truth) {
-            if (atom.getValue() > threshold) {
+            if (atom.getValue() >= threshold) {
                 String queryId = atom.getArguments()[0].toString();
                 if (totalPositives.containsKey(queryId)) {
                     totalPositives.put(queryId, (totalPositives.get(queryId) + 1));
                 } else {
-                    totalPositives.put(queryId, 0);
+                    totalPositives.put(queryId, 1);
                 }
             }
         }
+
+//        System.out.println("total positives" + totalPositives.toString());
+//        System.out.println(predicted.toString());
 
         // find the average precision for each query. Note that the predictions are already sorted
         // hashtables to hold the true positives seen so far, the position, the running sum of precisions, and
@@ -326,7 +339,7 @@ public class RankingEvaluator extends Evaluator {
         Map<String, Double> AveP = new Hashtable<>();
 
         for (GroundAtom atom : predicted) {
-            Boolean label = getLabel(atom);
+            Boolean label = getTruthLabel(atom);
             String queryId = atom.getArguments()[0].toString();
 
             if (label == null) {
@@ -356,10 +369,16 @@ public class RankingEvaluator extends Evaluator {
             }
         }
 
+//        System.out.println("TP seen" + TPSeen.toString());
+//        System.out.println("Position" + Position.toString());
+//        System.out.println("SumP" + SumP.toString());
+
         // Calculate the average precision for each query
         for (Map.Entry<String, Double> entry : SumP.entrySet()) {
             AveP.put(entry.getKey(), (entry.getValue() / totalPositives.get(entry.getKey())));
         }
+
+//        System.out.println("AveP" + AveP.toString());
 
         // Calculate the mean average precision over all the queries
         double MAP = 0.0;
@@ -371,34 +390,149 @@ public class RankingEvaluator extends Evaluator {
         }
         MAP = MAP / (double)NQ;
 
-//        for (GroundAtom atom : truth) {
-//            System.out.println(atom.getValue());
-//        }
-//        for (GroundAtom atom : predicted) {
-//            System.out.println(atom.getValue());
-//        }
-//        System.out.println(truth);
-//        System.out.println(predicted);
         return MAP;
+    }
+
+    public double discountedCumulativeGain() {
+        Map<String, Double> DCG = getDCGTable();
+
+        // Calculate the mean dcg over each query
+        double meanDCG = 0.0;
+        int NQ = 0;
+
+        for (Map.Entry<String, Double> entry : DCG.entrySet()) {
+            meanDCG = meanDCG + entry.getValue();
+            NQ = NQ + 1;
+        }
+        meanDCG = meanDCG / (double) NQ;
+
+        return meanDCG;
+    }
+
+    public double normalizedDiscountedCumulativeGain() {
+        Map<String, Double> DCG = getDCGTable();
+        Map<String, Double> IDCG = getIdealDCGTable();
+        Map<String, Double> NDCG = new Hashtable<>();
+
+        for (Map.Entry<String, Double> entry : DCG.entrySet()) {
+            NDCG.put(entry.getKey(), DCG.get(entry.getKey()) / IDCG.get(entry.getKey()));
+        }
+
+        // Calculate the mean NDCG over each query
+        double meanNDCG = 0.0;
+        int NQ = 0;
+
+        for (Map.Entry<String, Double> entry : NDCG.entrySet()) {
+            meanNDCG = meanNDCG + entry.getValue();
+            NQ = NQ + 1;
+        }
+        meanNDCG = meanNDCG / (double) NQ;
+
+        return meanNDCG;
     }
 
     @Override
     public String getAllStats() {
         return String.format(
-                "AUROC: %f, Positive Class AUPRC: %f, Negative Class AUPRC: %f",
-                auroc(), positiveAUPRC(), negativeAUPRC());
+                "AUROC: %f, Positive Class AUPRC: %f, Negative Class AUPRC: %f, Mean Average PrecisionMAP: %f, " +
+                        "Discounted Cumulative Gain DCG: %f, Normalized DCG: %f",
+                auroc(), positiveAUPRC(), negativeAUPRC(), meanAveragePrecision(),
+                discountedCumulativeGain(), normalizedDiscountedCumulativeGain());
+    }
+
+    private Map<String, Double> getIdealDCGTable() {
+        // hashtable to hold the running DCG sums and current rank positions for each query
+        Map<String, Double> IDCG = new Hashtable<>();
+        Map<String, Integer> Position = new Hashtable<>();
+
+        for (GroundAtom atom : truth) {
+            Double truthValue = getTruthValue(atom);
+            String queryId = atom.getArguments()[0].toString();
+
+            if (truthValue == null) {
+                continue;
+            }
+
+            // always update query position
+            if (Position.containsKey(queryId)) {
+                Position.put(queryId, (Position.get(queryId) + 1));
+            } else {
+                Position.put(queryId, 1);
+            }
+
+            // use position to calculate current DCG term and update DCG sum
+            double DCGTerm = ((Math.pow(2.0, truthValue) - 1)
+                    / (Math.log(Position.get(queryId) + 1) / Math.log(2)));
+            if (IDCG.containsKey(queryId)) {
+                IDCG.put(queryId, (IDCG.get(queryId) + DCGTerm));
+            } else {
+                IDCG.put(queryId, DCGTerm);
+            }
+        }
+        System.out.println("IDCG" + IDCG.toString());
+
+        return IDCG;
+    }
+
+    private Map<String, Double> getDCGTable() {
+        // hashtable to hold the running DCG sums and current rank positions for each query
+        Map<String, Double> DCG = new Hashtable<>();
+        Map<String, Integer> Position = new Hashtable<>();
+
+        for (GroundAtom atom : predicted) {
+            Double truthValue = getTruthValue(atom);
+            String queryId = atom.getArguments()[0].toString();
+
+            System.out.println(atom.getArguments()[0].toString() + atom.getArguments()[1].toString() + " : " + truthValue.toString());
+
+            if (truthValue == null) {
+                continue;
+            }
+
+            // always update query position
+            if (Position.containsKey(queryId)) {
+                Position.put(queryId, (Position.get(queryId) + 1));
+            } else {
+                Position.put(queryId, 1);
+            }
+
+            // use position to calculate current DCG term and update DCG sum
+            double DCGTerm = ((Math.pow(2.0, truthValue) - 1)
+                    / (Math.log(Position.get(queryId) + 1) / Math.log(2)));
+            if (DCG.containsKey(queryId)) {
+                DCG.put(queryId, (DCG.get(queryId) + DCGTerm));
+            } else {
+                DCG.put(queryId, DCGTerm);
+            }
+        }
+        System.out.println("DCG" + DCG.toString());
+
+        return DCG;
     }
 
     /**
      * If the atom exists in the truth, return it's boolean value.
      * Otherwise return null.
      */
-    private Boolean getLabel(GroundAtom atom) {
+    private Boolean getTruthLabel(GroundAtom atom) {
         int index = truth.indexOf(atom);
         if (index == -1) {
             return null;
         }
 
         return truth.get(index).getValue() > threshold;
+    }
+    
+    /**
+     * If the atom exists in the truth, return it's relevance value.
+     * Otherwise return null.
+     */
+    private Double getTruthValue(GroundAtom atom) {
+        int index = truth.indexOf(atom);
+        if (index == -1) {
+            return null;
+        }
+
+        return (double)truth.get(index).getValue();
     }
 }

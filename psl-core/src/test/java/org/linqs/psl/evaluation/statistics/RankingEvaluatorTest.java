@@ -59,37 +59,49 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
         Partition truthPartition = dataStore.getPartition("truth");
 
         // Create some canned ground inference atoms
-        Constant[][] cannedTerms = new Constant[8][];
+        int nCannedTerms = 7;
+        Constant[][] cannedTerms = new Constant[nCannedTerms][];
         cannedTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
-        cannedTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
-        cannedTerms[2] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(3) };
-        cannedTerms[3] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(4) };
-        cannedTerms[4] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(1) };
-        cannedTerms[5] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
-        cannedTerms[6] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(3) };
-        cannedTerms[7] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(4) };
+//        cannedTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
+        cannedTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(3) };
+        cannedTerms[2] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(4) };
+        cannedTerms[3] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(1) };
+        cannedTerms[4] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
+        cannedTerms[5] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(3) };
+        cannedTerms[6] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(4) };
 
         // Insert the predicated values.
         Inserter inserter = dataStore.getInserter(predicate, targetPartition);
+        double predValue = 1.0;
+        double step = predValue / (double)nCannedTerms;
         for (Constant[] terms : cannedTerms) {
-            inserter.insertValue(0.8, terms);
+            // Default prediction should be in the order of the cannedTerms instances above
+            inserter.insertValue(predValue, terms);
+            predValue = predValue - step;
         }
 
         // create some ground truth atoms
-        Constant[][] baselineTerms = new Constant[7][];
-        baselineTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
-        baselineTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
-        baselineTerms[2] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(3) };
-        baselineTerms[3] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(4) };
-        baselineTerms[4] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(1) };
-        baselineTerms[5] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
-        baselineTerms[6] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(3) };
+        Constant[][] baselinePositiveTerms = new Constant[6][];
+        baselinePositiveTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
+        baselinePositiveTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(3) };
+        baselinePositiveTerms[2] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(4) };
+        baselinePositiveTerms[3] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(1) };
+        baselinePositiveTerms[4] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
+        baselinePositiveTerms[5] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(3) };
+
+//        Constant[][] baselineNegativeTerms = new Constant[1][];
+//        baselineNegativeTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
 
         // Insert the truth values.
         inserter = dataStore.getInserter(predicate, truthPartition);
-        for (Constant[] terms : baselineTerms) {
+        for (Constant[] terms : baselinePositiveTerms) {
+//            System.out.println(terms[0]);
             inserter.insertValue(1.0, terms);
         }
+//        for (Constant[] terms : baselineNegativeTerms) {
+//            System.out.println(terms[0]);
+//            inserter.insertValue(0.0, terms);
+//        }
 
         // Redefine the truth database with no atoms in the write partition.
         Database results = dataStore.getDatabase(targetPartition);
@@ -150,19 +162,58 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
 
     @Test
     public void testMeanAveragePrecision() {
-        // Build new training map to test meanAveragePrecision
-
         for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
-            RankingEvaluator computer = new RankingEvaluator();
+            RankingEvaluator computer = new RankingEvaluator(threshold);
             computer.compute(trainingMap, predicate);
             double value = computer.meanAveragePrecision();
-            System.out.println(trainingMap.getTruthAtoms());
+//            System.out.println(value);
+//            System.out.println(threshold);
 
             if (threshold <= 0.8) {
-                assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
+                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
             } else {
-                assertEquals("Threshold: " + threshold, 0.5, value, MathUtils.EPSILON);
+                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
             }
         }
+    }
+
+    @Test
+    public void testDiscountedCumulativeGain() {
+        // TODO
+        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+            RankingEvaluator computer = new RankingEvaluator(threshold);
+            computer.compute(trainingMap, predicate);
+            double value = computer.discountedCumulativeGain();
+//            System.out.println(value);
+//            System.out.println(threshold);
+
+            if (threshold <= 0.8) {
+//                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
+            } else {
+//                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
+            }
+        }
+    }
+
+    @Test
+    public void testNormalizedDiscountedCumulativeGain() {
+        for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
+            RankingEvaluator computer = new RankingEvaluator(threshold);
+            computer.compute(trainingMap, predicate);
+            double value = computer.normalizedDiscountedCumulativeGain();
+
+            if (threshold <= 0.8) {
+                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
+            } else {
+                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
+            }
+        }
+    }
+
+    @Test
+    public void testGetAllStats() {
+        RankingEvaluator computer = new RankingEvaluator();
+        computer.compute(trainingMap, predicate);
+        System.out.println(computer.getAllStats());
     }
 }
