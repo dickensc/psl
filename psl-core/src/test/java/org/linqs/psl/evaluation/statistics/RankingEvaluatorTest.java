@@ -59,16 +59,16 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
         Partition truthPartition = dataStore.getPartition("truth");
 
         // Create some canned ground inference atoms
-        int nCannedTerms = 7;
+        int nCannedTerms = 8;
         Constant[][] cannedTerms = new Constant[nCannedTerms][];
         cannedTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(1) };
-//        cannedTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
         cannedTerms[1] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(3) };
         cannedTerms[2] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(4) };
         cannedTerms[3] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(1) };
         cannedTerms[4] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
         cannedTerms[5] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(3) };
         cannedTerms[6] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(4) };
+        cannedTerms[7] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
 
         // Insert the predicated values.
         Inserter inserter = dataStore.getInserter(predicate, targetPartition);
@@ -89,8 +89,8 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
         baselinePositiveTerms[4] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(2) };
         baselinePositiveTerms[5] = new Constant[]{ new UniqueIntID(2), new UniqueIntID(3) };
 
-//        Constant[][] baselineNegativeTerms = new Constant[1][];
-//        baselineNegativeTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
+        Constant[][] baselineNegativeTerms = new Constant[1][];
+        baselineNegativeTerms[0] = new Constant[]{ new UniqueIntID(1), new UniqueIntID(2) };
 
         // Insert the truth values.
         inserter = dataStore.getInserter(predicate, truthPartition);
@@ -98,17 +98,17 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
 //            System.out.println(terms[0]);
             inserter.insertValue(1.0, terms);
         }
-//        for (Constant[] terms : baselineNegativeTerms) {
+        for (Constant[] terms : baselineNegativeTerms) {
 //            System.out.println(terms[0]);
-//            inserter.insertValue(0.0, terms);
-//        }
+            inserter.insertValue(0.0, terms);
+        }
 
         // Redefine the truth database with no atoms in the write partition.
         Database results = dataStore.getDatabase(targetPartition);
         Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
         PersistedAtomManager atomManager = new PersistedAtomManager(results);
-        trainingMap = new TrainingMap(atomManager, truth, true);
+        trainingMap = new TrainingMap(atomManager, truth, true, false);
 
         // Since we only need the map, we can close all the databases.
         results.close();

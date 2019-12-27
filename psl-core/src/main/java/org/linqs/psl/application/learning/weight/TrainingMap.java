@@ -72,7 +72,8 @@ public class TrainingMap {
      * @param fetchObservedPairs also fetch the observed atom counterparts for any truth atom that does not
      *  have an associated RVA.
      */
-    public TrainingMap(PersistedAtomManager rvAtomManager, Database observedDB, boolean fetchObservedPairs) {
+    public TrainingMap(PersistedAtomManager rvAtomManager, Database observedDB, boolean fetchObservedPairs,
+                       boolean createOnGet) {
         Map<RandomVariableAtom, ObservedAtom> tempTrainingMap = new HashMap<RandomVariableAtom, ObservedAtom>(rvAtomManager.getPersistedCount());
         Map<ObservedAtom, ObservedAtom> tempObservedMap = new HashMap<ObservedAtom, ObservedAtom>();
         Set<RandomVariableAtom> tempLatentVariables = new HashSet<RandomVariableAtom>();
@@ -85,7 +86,7 @@ public class TrainingMap {
         // Go through all the atoms that were already persisted and build a mapping.
         for (RandomVariableAtom rvAtom : rvAtomManager.getPersistedRVAtoms()) {
             // Query the observed database to see if this is observed or latent.
-            GroundAtom otherAtom = observedDB.getAtom(rvAtom.getPredicate(), rvAtom.getArguments());
+            GroundAtom otherAtom = observedDB.getAtom(rvAtom.getPredicate(), createOnGet, rvAtom.getArguments());
 
             if (otherAtom instanceof ObservedAtom) {
                 tempTrainingMap.put(rvAtom, (ObservedAtom)otherAtom);
@@ -132,6 +133,11 @@ public class TrainingMap {
         observedMap = Collections.unmodifiableMap(tempObservedMap);
         latentVariables = Collections.unmodifiableSet(tempLatentVariables);
     }
+
+    public TrainingMap(PersistedAtomManager rvAtomManager, Database observedDB, boolean fetchObservedPairs) {
+        this(rvAtomManager, observedDB, fetchObservedPairs, true);
+    }
+
 
     /**
      * Get the mapping of random to observed atoms.
