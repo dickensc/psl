@@ -104,8 +104,6 @@ public class RankingEvaluator extends Evaluator {
                 continue;
             }
 
-            System.out.println(entry.toString());
-
             truth.add(entry.getValue());
             predicted.add(entry.getKey());
         }
@@ -469,7 +467,6 @@ public class RankingEvaluator extends Evaluator {
                 IDCG.put(queryId, DCGTerm);
             }
         }
-        System.out.println("IDCG" + IDCG.toString());
 
         return IDCG;
     }
@@ -482,8 +479,6 @@ public class RankingEvaluator extends Evaluator {
         for (GroundAtom atom : predicted) {
             Double truthValue = getTruthValue(atom);
             String queryId = atom.getArguments()[0].toString();
-
-            System.out.println(atom.getArguments()[0].toString() + atom.getArguments()[1].toString() + " : " + truthValue.toString());
 
             if (truthValue == null) {
                 continue;
@@ -505,7 +500,6 @@ public class RankingEvaluator extends Evaluator {
                 DCG.put(queryId, DCGTerm);
             }
         }
-        System.out.println("DCG" + DCG.toString());
 
         return DCG;
     }

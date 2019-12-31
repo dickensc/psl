@@ -75,7 +75,8 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
         double predValue = 1.0;
         double step = predValue / (double)nCannedTerms;
         for (Constant[] terms : cannedTerms) {
-            // Default prediction should be in the order of the cannedTerms instances above
+            // Default prediction should be in the order of the cannedTerms
+            // instances above as they all have predValue 1
             inserter.insertValue(predValue, terms);
             predValue = predValue - step;
         }
@@ -95,11 +96,9 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
         // Insert the truth values.
         inserter = dataStore.getInserter(predicate, truthPartition);
         for (Constant[] terms : baselinePositiveTerms) {
-//            System.out.println(terms[0]);
             inserter.insertValue(1.0, terms);
         }
         for (Constant[] terms : baselineNegativeTerms) {
-//            System.out.println(terms[0]);
             inserter.insertValue(0.0, terms);
         }
 
@@ -162,12 +161,11 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
 
     @Test
     public void testMeanAveragePrecision() {
+        // TODO Need more tests
         for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
             RankingEvaluator computer = new RankingEvaluator(threshold);
             computer.compute(trainingMap, predicate);
             double value = computer.meanAveragePrecision();
-//            System.out.println(value);
-//            System.out.println(threshold);
 
             if (threshold <= 0.8) {
                 assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
@@ -179,24 +177,21 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
 
     @Test
     public void testDiscountedCumulativeGain() {
-        // TODO
+        // TODO Need more tests
         for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
             RankingEvaluator computer = new RankingEvaluator(threshold);
             computer.compute(trainingMap, predicate);
             double value = computer.discountedCumulativeGain();
-//            System.out.println(value);
-//            System.out.println(threshold);
 
             if (threshold <= 0.8) {
-//                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
             } else {
-//                assertEquals("Threshold: " + threshold, 1.0, value, MathUtils.EPSILON);
             }
         }
     }
 
     @Test
     public void testNormalizedDiscountedCumulativeGain() {
+        // TODO Need more tests
         for (double threshold = 0.1; threshold <= 1.0; threshold += 0.1) {
             RankingEvaluator computer = new RankingEvaluator(threshold);
             computer.compute(trainingMap, predicate);
@@ -214,6 +209,5 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
     public void testGetAllStats() {
         RankingEvaluator computer = new RankingEvaluator();
         computer.compute(trainingMap, predicate);
-        System.out.println(computer.getAllStats());
     }
 }
