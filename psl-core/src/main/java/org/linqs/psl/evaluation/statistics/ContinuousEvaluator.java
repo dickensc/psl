@@ -86,6 +86,10 @@ public class ContinuousEvaluator extends Evaluator {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }
+            System.out.println("Truth: " + entry.getKey());
+            System.out.println("Value: " + entry.getKey().getValue());
+            System.out.println("Prediction: " + entry.getValue());
+            System.out.println("Value: " + entry.getValue().getValue());
 
             count++;
             absoluteError += Math.abs(entry.getValue().getValue() - entry.getKey().getValue());

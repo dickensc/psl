@@ -24,6 +24,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 
 import java.util.*;
 
+
 /**
  * Compute various ranking statistics.
  */
@@ -312,8 +313,6 @@ public class RankingEvaluator extends Evaluator {
         // hashtable to hold the number of ground truth positives for each query
         Map<String, Integer> totalPositives = new Hashtable<>();
 
-//        System.out.println(truth.toString());
-
         for (GroundAtom atom : truth) {
             if (atom.getValue() >= threshold) {
                 String queryId = atom.getArguments()[0].toString();
@@ -325,10 +324,7 @@ public class RankingEvaluator extends Evaluator {
             }
         }
 
-//        System.out.println("total positives" + totalPositives.toString());
-//        System.out.println(predicted.toString());
-
-        // find the average precision for each query. Note that the predictions are already sorted
+        // find the average precision for each query. Note that the predictions are already sorted.
         // hashtables to hold the true positives seen so far, the position, the running sum of precisions, and
         // the average precision for each query
         Map<String, Integer> TPSeen = new Hashtable<>();
@@ -367,16 +363,10 @@ public class RankingEvaluator extends Evaluator {
             }
         }
 
-//        System.out.println("TP seen" + TPSeen.toString());
-//        System.out.println("Position" + Position.toString());
-//        System.out.println("SumP" + SumP.toString());
-
         // Calculate the average precision for each query
         for (Map.Entry<String, Double> entry : SumP.entrySet()) {
             AveP.put(entry.getKey(), (entry.getValue() / totalPositives.get(entry.getKey())));
         }
-
-//        System.out.println("AveP" + AveP.toString());
 
         // Calculate the mean average precision over all the queries
         double MAP = 0.0;
