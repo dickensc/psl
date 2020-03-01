@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2019 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,10 +97,10 @@ public class RankingEvaluator extends Evaluator {
 
     @Override
     public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
-        truth = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
-        predicted = new ArrayList<GroundAtom>(trainingMap.getTrainingMap().size());
+        truth = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
+        predicted = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
 
-        for (Map.Entry<GroundAtom, GroundAtom> entry : trainingMap.getFullMap()) {
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }
@@ -192,7 +192,7 @@ public class RankingEvaluator extends Evaluator {
         }
 
         // Add the final piece.
-        area += 0.5 * (1.0 - prevX) * Math.abs(0.0 - prevY) + (1.0 - prevX) * 0;
+        area += 0.5 * (1.0 - prevX) * Math.abs(0.0 - prevY) + (1.0 - prevX) * 0.0;
 
         return area;
     }
@@ -266,6 +266,12 @@ public class RankingEvaluator extends Evaluator {
         }
 
         int totalNegatives = predicted.size() - totalPositives;
+
+        if (totalPositives == 0) {
+            return 0.0;
+        } else if (totalNegatives == 0) {
+            return 1.0;
+        }
 
         double area = 0.0;
         int tp = 0;
@@ -506,7 +512,7 @@ public class RankingEvaluator extends Evaluator {
 
         return truth.get(index).getValue() > threshold;
     }
-    
+
     /**
      * If the atom exists in the truth, return it's relevance value.
      * Otherwise return null.
