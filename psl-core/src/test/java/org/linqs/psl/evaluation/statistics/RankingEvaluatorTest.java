@@ -107,7 +107,7 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
         Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
         PersistedAtomManager atomManager = new PersistedAtomManager(results);
-        trainingMap = new TrainingMap(atomManager, truth, true, false);
+        trainingMap = new TrainingMap(atomManager, truth);
 
         // Since we only need the map, we can close all the databases.
         results.close();
@@ -118,21 +118,21 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
     public void testAUROC() {
         RankingEvaluator evaluator = new RankingEvaluator();
         evaluator.compute(trainingMap, predicate);
-        assertEquals(0.75, evaluator.auroc(), MathUtils.EPSILON);
+        assertEquals(1, evaluator.auroc(), MathUtils.EPSILON);
     }
 
     @Test
     public void testPositiveAUPRC() {
         RankingEvaluator evaluator = new RankingEvaluator();
         evaluator.compute(trainingMap, predicate);
-        assertEquals(0.875, evaluator.positiveAUPRC(), MathUtils.EPSILON);
+        assertEquals(1, evaluator.positiveAUPRC(), MathUtils.EPSILON);
     }
 
     @Test
     public void testNegativeAUPRC() {
         RankingEvaluator evaluator = new RankingEvaluator();
         evaluator.compute(trainingMap, predicate);
-        assertEquals(13.0 / 24.0, evaluator.negativeAUPRC(), MathUtils.EPSILON);
+        assertEquals(0.5, evaluator.negativeAUPRC(), MathUtils.EPSILON);
     }
 
     @Test

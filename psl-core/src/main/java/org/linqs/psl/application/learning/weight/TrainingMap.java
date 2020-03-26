@@ -144,11 +144,6 @@ public class TrainingMap {
         missingTargets = Collections.unmodifiableList(tempMissingTargets);
     }
 
-    public TrainingMap(PersistedAtomManager rvAtomManager, Database observedDB, boolean fetchObservedPairs) {
-        this(rvAtomManager, observedDB, fetchObservedPairs, true);
-    }
-
-
     /**
      * Get the mapping of unobserved targets to truth atoms.
      */
