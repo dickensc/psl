@@ -185,7 +185,7 @@ public class CategoricalEvaluator extends Evaluator {
     }
 
     /**
-     * Build up a set that has all the atoms that represet the best categorical assignments.
+     * Build up a set that has all the atoms that represent the best categorical assignments.
      */
     private Set<GroundAtom> getPredictedCategories(TrainingMap trainingMap, StandardPredicate predicate) {
         int numArgs = predicate.getArity();
