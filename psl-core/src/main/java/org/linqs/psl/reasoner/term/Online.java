@@ -26,18 +26,23 @@ import java.lang.reflect.Array;
  */
 public class Online<E extends ReasonerLocalVariable> {
     private E[] variables;
+    private E[] observed;
     private float[] coefficients;
+    private float[] observed_coefficients;
     private int size;
     private float constant;
 
     @SuppressWarnings("unchecked")
     public Online(Class<E> localVariableClass, int maxSize, float constant) {
-        this((E[])Array.newInstance(localVariableClass, maxSize) , new float[maxSize], constant, 0);
+        this((E[])Array.newInstance(localVariableClass, maxSize), (E[])Array.newInstance(localVariableClass, maxSize),
+                new float[maxSize], new float[maxSize], constant, 0);
     }
 
-    public Online(E[] variables, float[] coefficients, float constant, int size) {
+    public Online(E[] variables, E[] observed, float[] coefficients, float[] observed_coefficients, float constant, int size) {
         this.variables = variables;
+        this.variables = observed;
         this.coefficients = coefficients;
+        this.coefficients = observed_coefficients;
         this.constant = constant;
         this.size = size;
     }
