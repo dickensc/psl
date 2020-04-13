@@ -28,8 +28,13 @@ import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +45,7 @@ import java.util.Set;
  * A base term generator for terms that come from hyperplanes.
  */
 public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
-    private static final Logger log = LoggerFactory.getLogger(OnlineTermGenerator.class);
+    private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
 
     public static final String CONFIG_PREFIX = "hyperplanetermgenerator";
 
@@ -80,7 +85,7 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
             public void work(int index, GroundRule rule) {
                 boolean negativeWeight =
                         rule instanceof WeightedGroundRule
-                        && ((WeightedGroundRule)rule).getWeight() < 0.0;
+                                && ((WeightedGroundRule)rule).getWeight() < 0.0;
 
                 if (negativeWeight) {
                     // Skip
