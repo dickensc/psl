@@ -23,12 +23,11 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
  */
-public class SGDObjectiveTerm implements ReasonerTerm  {
+public class SGDOnlineObjectiveTerm implements ReasonerTerm  {
     private boolean squared;
     private boolean hinge;
 
@@ -40,10 +39,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
-            boolean squared, boolean hinge,
-            Online<RandomVariableAtom> online,
-            float weight, float learningRate) {
+    public SGDOnlineObjectiveTerm(VariableTermStore<SGDOnlineObjectiveTerm, RandomVariableAtom> termStore,
+                                  boolean squared, boolean hinge,
+                                  Online<RandomVariableAtom> online,
+                                  float weight, float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
 

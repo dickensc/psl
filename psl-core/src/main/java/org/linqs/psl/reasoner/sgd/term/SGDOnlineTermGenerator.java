@@ -46,15 +46,15 @@ public class SGDOnlineTermGenerator extends OnlineTermGenerator<SGDObjectiveTerm
 
     @Override
     public SGDObjectiveTerm createLossTerm(TermStore<SGDObjectiveTerm, RandomVariableAtom> baseTermStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
+            boolean isHinge, boolean isSquared, GroundRule groundRule, Online<RandomVariableAtom> online) {
         VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return new SGDObjectiveTerm(termStore, isSquared, isHinge, hyperplane, weight, learningRate);
+        return new SGDObjectiveTerm(termStore, isSquared, isHinge, online, weight, learningRate);
     }
 
     @Override
     public SGDObjectiveTerm createLinearConstraintTerm(TermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
-            GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane, FunctionComparator comparator) {
+            GroundRule groundRule, Online<RandomVariableAtom> online, FunctionComparator comparator) {
         log.warn("SGD does not support hard constraints, i.e. " + groundRule);
         return null;
     }

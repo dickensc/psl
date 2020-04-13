@@ -28,10 +28,6 @@ import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
@@ -42,12 +38,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A base term generator for terms that come from hyperplanes.
+ * A base term generator for terms that come from onlines.
  */
 public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
-    private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
+    private static final Logger log = LoggerFactory.getLogger(OnlineTermGenerator.class);
 
-    public static final String CONFIG_PREFIX = "hyperplanetermgenerator";
+    public static final String CONFIG_PREFIX = "onlinetermgenerator";
 
     /**
      * If true, then invert negative weight rules into their positive weight counterparts
@@ -120,34 +116,34 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
     public T createTerm(GroundRule groundRule, TermStore<T, V> termStore) {
         if (groundRule instanceof WeightedGroundRule) {
             GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
-            Hyperplane<V> hyperplane = processHyperplane(function, termStore);
-            if (hyperplane == null) {
+            Online<V> online = processOnline(function, termStore);
+            if (online == null) {
                 return null;
             }
 
             // Non-negative functions have a hinge.
-            return createLossTerm(termStore, function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
+            return createLossTerm(termStore, function.isNonNegative(), function.isSquared(), groundRule, online);
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
             GeneralFunction function = constraint.getFunction();
-            Hyperplane<V> hyperplane = processHyperplane(function, termStore);
-            if (hyperplane == null) {
+            Online<V> online = processOnline(function, termStore);
+            if (online == null) {
                 return null;
             }
 
-            hyperplane.setConstant((float)(constraint.getValue() + hyperplane.getConstant()));
-            return createLinearConstraintTerm(termStore, groundRule, hyperplane, constraint.getComparator());
+            online.setConstant((float)(constraint.getValue() + online.getConstant()));
+            return createLinearConstraintTerm(termStore, groundRule, online, constraint.getComparator());
         } else {
             throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
         }
     }
 
     /**
-     * Construct a hyperplane from a general function.
+     * Construct a online from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    private Hyperplane<V> processHyperplane(GeneralFunction sum, TermStore<T, V> termStore) {
-        Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant());
+    private Online<V> processOnline(GeneralFunction sum, TermStore<T, V> termStore) {
+        Online<V> online = new Online<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant());
 
         for (int i = 0; i < sum.size(); i++) {
             float coefficient = (float)sum.getCoefficient(i);
@@ -156,10 +152,10 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
             if (term instanceof RandomVariableAtom) {
                 V variable = termStore.createLocalVariable((RandomVariableAtom)term);
 
-                // Check to see if we have seen this variable before in this hyperplane.
+                // Check to see if we have seen this variable before in this online.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
-                // variables per hyperplane.
-                int localIndex = hyperplane.indexOfVariable(variable);
+                // variables per online.
+                int localIndex = online.indexOfVariable(variable);
                 if (localIndex != -1) {
                     // If this function came from a logical rule
                     // and the sign of the current coefficient and the coefficient of this variable do not match,
@@ -167,41 +163,41 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
                     // Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
                     // A mismatch in signs for the same variable means that a ground atom appeared twice,
                     // once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
-                    if (sum.isNonNegative() && !MathUtils.signsMatch(hyperplane.getCoefficient(localIndex), coefficient)) {
+                    if (sum.isNonNegative() && !MathUtils.signsMatch(online.getCoefficient(localIndex), coefficient)) {
                         return null;
                     }
 
                     // If the local variable already exists, just add to its coefficient.
-                    hyperplane.appendCoefficient(localIndex, coefficient);
+                    online.appendCoefficient(localIndex, coefficient);
                 } else {
-                    hyperplane.addTerm(variable, coefficient);
+                    online.addTerm(variable, coefficient);
                 }
             } else if (term.isConstant()) {
-                // Subtracts because hyperplane is stored as coeffs^T * x = constant.
-                hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
+                // Subtracts because online is stored as coeffs^T * x = constant.
+                online.setConstant(online.getConstant() - (float)(coefficient * term.getValue()));
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
             }
         }
 
-        return hyperplane;
+        return online;
     }
 
     /**
      * Get the class object for the local vairable type.
-     * This is for type safety when creating hyperplanes.
+     * This is for type safety when creating onlines.
      */
     public abstract Class<V> getLocalVariableType();
 
     /**
-     * Create a term from a ground rule and hyperplane.
+     * Create a term from a ground rule and online.
      * Non-hinge terms are linear combinations (ala arithmetic rules).
      * Non-squared terms are linear.
      */
-    public abstract T createLossTerm(TermStore<T, V> termStore, boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<V> hyperplane);
+    public abstract T createLossTerm(TermStore<T, V> termStore, boolean isHinge, boolean isSquared, GroundRule groundRule, Online<V> online);
 
     /**
      * Create a hard constraint term,
      */
-    public abstract T createLinearConstraintTerm(TermStore<T, V> termStore, GroundRule groundRule, Hyperplane<V> hyperplane, FunctionComparator comparator);
+    public abstract T createLinearConstraintTerm(TermStore<T, V> termStore, GroundRule groundRule, Online<V> online, FunctionComparator comparator);
 }
