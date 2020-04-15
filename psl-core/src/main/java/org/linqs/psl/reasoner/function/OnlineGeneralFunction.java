@@ -19,8 +19,6 @@ package org.linqs.psl.reasoner.function;
 
 import org.linqs.psl.model.atom.GroundAtom;
 
-import java.util.Arrays;
-
 /**
  * A general function that can handle various cases.
  * The function is some linear combination of terms.
@@ -28,14 +26,10 @@ import java.util.Arrays;
  * Note that the design of this function is to reduce the number of
  * allocations at grounding time.
  */
-public class GeneralFunction implements FunctionTerm {
+public class OnlineGeneralFunction implements FunctionTerm {
     private final float[] coefficients;
     private final FunctionTerm[] terms;
     private int size;
-
-    private float[] observedCoefficients;
-    private FunctionTerm[] observedTerms;
-    private int observedSize;
 
     // All constants will get merged into this.
     private float constant;
@@ -48,15 +42,10 @@ public class GeneralFunction implements FunctionTerm {
     private boolean nonNegative;
     private boolean squared;
 
-    public GeneralFunction(boolean nonNegative, boolean squared, int maxSize) {
+    public OnlineGeneralFunction(boolean nonNegative, boolean squared, int maxSize) {
         coefficients = new float[maxSize];
         terms = new FunctionTerm[maxSize];
         size = 0;
-
-        observedCoefficients = new float[0];
-        observedTerms = new FunctionTerm[0];
-        observedSize = 0;
-
         constant = 0.0f;
 
         this.nonNegative = nonNegative;
@@ -108,12 +97,7 @@ public class GeneralFunction implements FunctionTerm {
     public void add(float coefficient, FunctionTerm term) {
         // Merge constants.
         if (term.isConstant()) {
-            observedSize++;
             constant += (coefficient * term.getValue());
-            observedTerms = Arrays.copyOf(observedTerms, observedSize);
-            observedTerms[observedSize - 1] = term;
-            observedCoefficients = Arrays.copyOf(observedCoefficients, observedSize);
-            observedCoefficients[observedSize - 1] = coefficient;
             return;
         }
 
@@ -134,23 +118,11 @@ public class GeneralFunction implements FunctionTerm {
         return size;
     }
 
-    public int observedSize() {
-        return observedSize;
-    }
-
     public float getCoefficient(int index) {
         return coefficients[index];
     }
 
-    public float getObservedCoefficient(int index) {
-        return coefficients[index];
-    }
-
     public FunctionTerm getTerm(int index) {
-        return terms[index];
-    }
-
-    public FunctionTerm getObservedTerm(int index) {
         return terms[index];
     }
 

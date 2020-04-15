@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.term.online;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -42,13 +43,13 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
     /**
      * Prefix of property keys used by this class.
      */
-    public static final String CONFIG_PREFIX = "streamingtermstore";
+    public static final String CONFIG_PREFIX = "onlinetermstore";
 
     /**
      * Where on disk to write term pages.
      */
     public static final String PAGE_LOCATION_KEY = CONFIG_PREFIX + ".pagelocation";
-    public static final String PAGE_LOCATION_DEFAULT = SystemUtils.getTempDir("streaimg_term_cache_pages");
+    public static final String PAGE_LOCATION_DEFAULT = SystemUtils.getTempDir("online_term_cache_pages");
 
     /**
      * The number of terms in a single page.
@@ -81,10 +82,14 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
 
     // Keep track of variable indexes.
     protected Map<RandomVariableAtom, Integer> variables;
+    protected Map<ObservedAtom, Integer> observed;
 
     // Matching arrays for variables values and atoms.
     private float[] variableValues;
     private RandomVariableAtom[] variableAtoms;
+    // Matching arrays for observed values and atoms.
+    private float[] observedValues;
+    private ObservedAtom[] observedAtoms;
 
     protected List<String> termPagePaths;
     protected List<String> volatilePagePaths;
@@ -257,6 +262,26 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
         variables.put(atom, index);
         variableValues[index] = RandUtils.nextFloat();
         variableAtoms[index] = atom;
+
+        return atom;
+    }
+
+    public synchronized ObservedAtom createLocalObservedVariable(ObservedAtom atom) {
+        if (observed.containsKey(atom)) {
+            return atom;
+        }
+
+        // Got a new variable.
+
+        if (observed.size() >= observedAtoms.length) {
+            ensureVariableCapacity(variables.size() * 2);
+        }
+
+        int index = observed.size();
+
+        observed.put(atom, index);
+        observedValues[index] = RandUtils.nextFloat();
+        observedAtoms[index] = atom;
 
         return atom;
     }

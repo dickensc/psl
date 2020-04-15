@@ -19,6 +19,8 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
@@ -28,6 +30,7 @@ import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
@@ -35,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -142,8 +146,9 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
      * Construct a online from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    private Online<V> processOnline(GeneralFunction sum, TermStore<T, V> termStore) {
-        Online<V> online = new Online<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant());
+    private Online<V> processOnline(GeneralFunction sum, OnlineTermStore<T> termStore) {
+
+        Online<V> online = new Online<V>(getLocalVariableType(), sum.size(), sum.observedSize(), -1.0f * (float)sum.getConstant());
 
         for (int i = 0; i < sum.size(); i++) {
             float coefficient = (float)sum.getCoefficient(i);
@@ -151,6 +156,41 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
 
             if (term instanceof RandomVariableAtom) {
                 V variable = termStore.createLocalVariable((RandomVariableAtom)term);
+
+                // Check to see if we have seen this variable before in this online.
+                // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
+                // variables per online.
+                int localIndex = online.indexOfVariable(variable);
+                if (localIndex != -1) {
+                    // If this function came from a logical rule
+                    // and the sign of the current coefficient and the coefficient of this variable do not match,
+                    // then this term is trivial.
+                    // Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
+                    // A mismatch in signs for the same variable means that a ground atom appeared twice,
+                    // once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
+                    if (sum.isNonNegative() && !MathUtils.signsMatch(online.getCoefficient(localIndex), coefficient)) {
+                        return null;
+                    }
+
+                    // If the local variable already exists, just add to its coefficient.
+                    online.appendCoefficient(localIndex, coefficient);
+                } else {
+                    online.addTerm(variable, coefficient);
+                }
+            } else if (term.isConstant()) {
+                // Subtracts because online is stored as coeffs^T * x = constant.
+                online.setConstant(online.getConstant() - (float)(coefficient * term.getValue()));
+            } else {
+                throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
+            }
+        }
+
+        for (int i = 0; i < sum.observedSize(); i++) {
+            float coefficient = (float)sum.getObservedCoefficient(i);
+            FunctionTerm term = sum.getObservedTerm(i);
+
+            if (term instanceof ObservedAtom) {
+                V variable = termStore.createLocalObservedVariable((ObservedAtom)term);
 
                 // Check to see if we have seen this variable before in this online.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of

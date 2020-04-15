@@ -29,53 +29,62 @@ public class Online<E extends ReasonerLocalVariable> {
     private E[] observed;
     private float[] coefficients;
     private float[] observed_coefficients;
-    private int size;
+    private int VariableIndex;
+    private int ObservedIndex;
     private float constant;
 
     @SuppressWarnings("unchecked")
-    public Online(Class<E> localVariableClass, int maxSize, float constant) {
-        this((E[])Array.newInstance(localVariableClass, maxSize), (E[])Array.newInstance(localVariableClass, maxSize),
-                new float[maxSize], new float[maxSize], constant, 0);
+    public Online(Class<E> localVariableClass, int maxVariableSize, int maxObservedSize, float constant) {
+        this((E[])Array.newInstance(localVariableClass, maxVariableSize), (E[])Array.newInstance(localVariableClass, maxObservedSize),
+                new float[maxVariableSize], new float[maxObservedSize], constant, 0, 0);
     }
 
-    public Online(E[] variables, E[] observed, float[] coefficients, float[] observed_coefficients, float constant, int size) {
+    public Online(E[] variables, E[] observed, float[] coefficients, float[] observed_coefficients,
+                  float constant, int variableIndex, int observedIndex) {
         this.variables = variables;
-        this.variables = observed;
+        this.observed = observed;
         this.coefficients = coefficients;
-        this.coefficients = observed_coefficients;
+        this.observed_coefficients = observed_coefficients;
         this.constant = constant;
-        this.size = size;
+        this.VariableIndex = variableIndex;
+        this.ObservedIndex = observedIndex;
     }
 
     public void addTerm(E variable, float coefficient) {
-        variables[size] = variable;
-        coefficients[size] = coefficient;
-        size++;
+        variables[VariableIndex] = variable;
+        coefficients[VariableIndex] = coefficient;
+        VariableIndex++;
+    }
+
+    public void addObservedTerm(E variable, float coefficient) {
+        observed[ObservedIndex] = variable;
+        observed_coefficients[ObservedIndex] = coefficient;
+        ObservedIndex++;
     }
 
     public int size() {
-        return size;
+        return VariableIndex;
     }
 
     public E getVariable(int index) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + size + " exist.");
+        if (index >= VariableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + VariableIndex + " exist.");
         }
 
         return variables[index];
     }
 
     public float getCoefficient(int index) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
+        if (index >= VariableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + VariableIndex + " exist.");
         }
 
         return coefficients[index];
     }
 
     public void appendCoefficient(int index, float value) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
+        if (index >= VariableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + VariableIndex + " exist.");
         }
 
         coefficients[index] += value;
@@ -90,7 +99,7 @@ public class Online<E extends ReasonerLocalVariable> {
     }
 
     public int indexOfVariable(E needle) {
-        return ArrayUtils.indexOf(variables, size, needle);
+        return ArrayUtils.indexOf(variables, VariableIndex, needle);
     }
 
     public E[] getVariables() {
