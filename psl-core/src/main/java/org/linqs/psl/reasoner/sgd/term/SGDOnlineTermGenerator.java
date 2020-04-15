@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A TermGenerator for SGD objective terms.
  */
-public class SGDOnlineTermGenerator extends OnlineTermGenerator<SGDObjectiveTerm, RandomVariableAtom> {
+public class SGDOnlineTermGenerator extends OnlineTermGenerator<SGDOnlineObjectiveTerm, RandomVariableAtom> {
     private static final Logger log = LoggerFactory.getLogger(SGDOnlineTermGenerator.class);
 
     private float learningRate;
@@ -45,15 +45,15 @@ public class SGDOnlineTermGenerator extends OnlineTermGenerator<SGDObjectiveTerm
     }
 
     @Override
-    public SGDObjectiveTerm createLossTerm(TermStore<SGDObjectiveTerm, RandomVariableAtom> baseTermStore,
+    public SGDOnlineObjectiveTerm createLossTerm(TermStore<SGDOnlineObjectiveTerm, RandomVariableAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Online<RandomVariableAtom> online) {
-        VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+        VariableTermStore<SGDOnlineObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDOnlineObjectiveTerm, RandomVariableAtom>)baseTermStore;
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return new SGDObjectiveTerm(termStore, isSquared, isHinge, online, weight, learningRate);
+        return new SGDOnlineObjectiveTerm(termStore, isSquared, isHinge, online, weight, learningRate);
     }
 
     @Override
-    public SGDObjectiveTerm createLinearConstraintTerm(TermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
+    public SGDOnlineObjectiveTerm createLinearConstraintTerm(TermStore<SGDOnlineObjectiveTerm, RandomVariableAtom> termStore,
             GroundRule groundRule, Online<RandomVariableAtom> online, FunctionComparator comparator) {
         log.warn("SGD does not support hard constraints, i.e. " + groundRule);
         return null;

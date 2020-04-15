@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.util.ArrayUtils;
 
 import java.lang.reflect.Array;
@@ -26,7 +27,7 @@ import java.lang.reflect.Array;
  */
 public class Online<E extends ReasonerLocalVariable> {
     private E[] variables;
-    private E[] observed;
+    private ObservedAtom[] observed;
     private float[] coefficients;
     private float[] observed_coefficients;
     private int VariableIndex;
@@ -35,11 +36,11 @@ public class Online<E extends ReasonerLocalVariable> {
 
     @SuppressWarnings("unchecked")
     public Online(Class<E> localVariableClass, int maxVariableSize, int maxObservedSize, float constant) {
-        this((E[])Array.newInstance(localVariableClass, maxVariableSize), (E[])Array.newInstance(localVariableClass, maxObservedSize),
+        this((E[])Array.newInstance(localVariableClass, maxVariableSize), (ObservedAtom[])Array.newInstance(localVariableClass, maxObservedSize),
                 new float[maxVariableSize], new float[maxObservedSize], constant, 0, 0);
     }
 
-    public Online(E[] variables, E[] observed, float[] coefficients, float[] observed_coefficients,
+    public Online(E[] variables, ObservedAtom[] observed, float[] coefficients, float[] observed_coefficients,
                   float constant, int variableIndex, int observedIndex) {
         this.variables = variables;
         this.observed = observed;
@@ -56,7 +57,7 @@ public class Online<E extends ReasonerLocalVariable> {
         VariableIndex++;
     }
 
-    public void addObservedTerm(E variable, float coefficient) {
+    public void addObservedTerm(ObservedAtom variable, float coefficient) {
         observed[ObservedIndex] = variable;
         observed_coefficients[ObservedIndex] = coefficient;
         ObservedIndex++;
@@ -64,6 +65,10 @@ public class Online<E extends ReasonerLocalVariable> {
 
     public int size() {
         return VariableIndex;
+    }
+
+    public int observed_size() {
+        return ObservedIndex;
     }
 
     public E getVariable(int index) {
@@ -74,6 +79,14 @@ public class Online<E extends ReasonerLocalVariable> {
         return variables[index];
     }
 
+    public ObservedAtom getObserved(int index) {
+        if (index >= ObservedIndex) {
+            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + ObservedIndex + " exist.");
+        }
+
+        return observed[index];
+    }
+
     public float getCoefficient(int index) {
         if (index >= VariableIndex) {
             throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + VariableIndex + " exist.");
@@ -82,12 +95,28 @@ public class Online<E extends ReasonerLocalVariable> {
         return coefficients[index];
     }
 
+    public float getObservedCoefficient(int index) {
+        if (index >= ObservedIndex) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + ObservedIndex + " exist.");
+        }
+
+        return observed_coefficients[index];
+    }
+
     public void appendCoefficient(int index, float value) {
         if (index >= VariableIndex) {
             throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + VariableIndex + " exist.");
         }
 
         coefficients[index] += value;
+    }
+
+    public void appendObservedCoefficient(int index, float value) {
+        if (index >= ObservedIndex) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + ObservedIndex + " exist.");
+        }
+
+        observed_coefficients[index] += value;
     }
 
     public float getConstant() {
@@ -102,11 +131,23 @@ public class Online<E extends ReasonerLocalVariable> {
         return ArrayUtils.indexOf(variables, VariableIndex, needle);
     }
 
+    public int indexOfObserved(E needle) {
+        return ArrayUtils.indexOf(observed, ObservedIndex, needle);
+    }
+
     public E[] getVariables() {
         return variables;
     }
 
+    public ObservedAtom[] getObserveds() {
+        return observed;
+    }
+
     public float[] getCoefficients() {
         return coefficients;
+    }
+
+    public float[] getObservedCoefficients() {
+        return observed_coefficients;
     }
 }

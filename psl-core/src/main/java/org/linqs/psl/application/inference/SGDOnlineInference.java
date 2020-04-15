@@ -22,7 +22,7 @@ import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.sgd.SGDReasoner;
+import org.linqs.psl.reasoner.sgd.SGDOnlineReasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDOnlineTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -39,7 +39,7 @@ public class SGDOnlineInference extends InferenceApplication {
 
     @Override
     protected Reasoner createReasoner() {
-        return new SGDReasoner();
+        return new SGDOnlineReasoner();
     }
 
     @Override

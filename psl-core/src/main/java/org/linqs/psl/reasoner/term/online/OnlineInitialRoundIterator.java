@@ -53,7 +53,7 @@ public abstract class OnlineInitialRoundIterator<T extends ReasonerTerm> impleme
     protected List<GroundRule> pendingGroundRules;
 
     protected List<T> termCache;
-    protected List<T> termPool;
+    protected List<T> termPool; // If we are on the first page, set aside the term for reuse.
 
     protected ByteBuffer termBuffer;
     protected ByteBuffer volatileBuffer;
@@ -86,10 +86,14 @@ public abstract class OnlineInitialRoundIterator<T extends ReasonerTerm> impleme
 
         pendingGroundRules = new ArrayList<GroundRule>();
 
+        // initially empty
         this.termCache = termCache;
+        // For good measure clear this
         this.termCache.clear();
 
+        // initially empty
         this.termPool = termPool;
+        // For good measure clear this
         this.termPool.clear();
 
         this.termBuffer = termBuffer;

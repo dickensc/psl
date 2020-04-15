@@ -120,7 +120,7 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
     public T createTerm(GroundRule groundRule, TermStore<T, V> termStore) {
         if (groundRule instanceof WeightedGroundRule) {
             GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
-            Online<V> online = processOnline(function, termStore);
+            Online<V> online = processOnline(function, (OnlineTermStore)termStore);
             if (online == null) {
                 return null;
             }
@@ -130,7 +130,7 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
             GeneralFunction function = constraint.getFunction();
-            Online<V> online = processOnline(function, termStore);
+            Online<V> online = processOnline(function, (OnlineTermStore)termStore);
             if (online == null) {
                 return null;
             }
@@ -155,12 +155,12 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
             FunctionTerm term = sum.getTerm(i);
 
             if (term instanceof RandomVariableAtom) {
-                V variable = termStore.createLocalVariable((RandomVariableAtom)term);
+                RandomVariableAtom variable = termStore.createLocalVariable((RandomVariableAtom)term);
 
                 // Check to see if we have seen this variable before in this online.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
                 // variables per online.
-                int localIndex = online.indexOfVariable(variable);
+                int localIndex = online.indexOfVariable((V)variable);
                 if (localIndex != -1) {
                     // If this function came from a logical rule
                     // and the sign of the current coefficient and the coefficient of this variable do not match,
@@ -175,7 +175,7 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
                     // If the local variable already exists, just add to its coefficient.
                     online.appendCoefficient(localIndex, coefficient);
                 } else {
-                    online.addTerm(variable, coefficient);
+                    online.addTerm((V)variable, coefficient);
                 }
             } else if (term.isConstant()) {
                 // Subtracts because online is stored as coeffs^T * x = constant.
@@ -185,17 +185,18 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
             }
         }
 
+        // add observed terms to term
         for (int i = 0; i < sum.observedSize(); i++) {
             float coefficient = (float)sum.getObservedCoefficient(i);
             FunctionTerm term = sum.getObservedTerm(i);
 
             if (term instanceof ObservedAtom) {
-                V variable = termStore.createLocalObservedVariable((ObservedAtom)term);
+                ObservedAtom variable = termStore.createLocalObservedVariable((ObservedAtom)term);
 
                 // Check to see if we have seen this variable before in this online.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
                 // variables per online.
-                int localIndex = online.indexOfVariable(variable);
+                int localIndex = online.indexOfObserved((V)variable);
                 if (localIndex != -1) {
                     // If this function came from a logical rule
                     // and the sign of the current coefficient and the coefficient of this variable do not match,
@@ -208,13 +209,10 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
                     }
 
                     // If the local variable already exists, just add to its coefficient.
-                    online.appendCoefficient(localIndex, coefficient);
+                    online.appendObservedCoefficient(localIndex, coefficient);
                 } else {
-                    online.addTerm(variable, coefficient);
+                    online.addObservedTerm((V)variable, coefficient);
                 }
-            } else if (term.isConstant()) {
-                // Subtracts because online is stored as coeffs^T * x = constant.
-                online.setConstant(online.getConstant() - (float)(coefficient * term.getValue()));
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
             }

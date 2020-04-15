@@ -30,7 +30,7 @@ import java.util.List;
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */
-public class SGDOnlineTermStore extends OnlineTermStore<SGDObjectiveTerm> {
+public class SGDOnlineTermStore extends OnlineTermStore<SGDOnlineObjectiveTerm> {
     public SGDOnlineTermStore(List<Rule> rules, AtomManager atomManager) {
         super(rules, atomManager, new SGDOnlineTermGenerator());
     }
@@ -42,21 +42,21 @@ public class SGDOnlineTermStore extends OnlineTermStore<SGDObjectiveTerm> {
     }
 
     @Override
-    protected OnlineIterator<SGDObjectiveTerm> getInitialRoundIterator() {
+    protected OnlineIterator<SGDOnlineObjectiveTerm> getInitialRoundIterator() {
         return new SGDOnlineInitialRoundIterator(
                 this, rules, atomManager, termGenerator,
                 termCache, termPool, termBuffer, volatileBuffer, pageSize);
     }
 
     @Override
-    protected OnlineIterator<SGDObjectiveTerm> getCacheIterator() {
+    protected OnlineIterator<SGDOnlineObjectiveTerm> getCacheIterator() {
         return new SGDOnlineCacheIterator(
                 this, false, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 
     @Override
-    protected OnlineIterator<SGDObjectiveTerm> getNoWriteIterator() {
+    protected OnlineIterator<SGDOnlineObjectiveTerm> getNoWriteIterator() {
         return new SGDOnlineCacheIterator(
                 this, true, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);

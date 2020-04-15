@@ -22,6 +22,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.OnlineTermGenerator;
 import org.linqs.psl.reasoner.term.online.OnlineInitialRoundIterator;
+import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -34,11 +35,11 @@ import java.util.List;
  * On this first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public class SGDOnlineInitialRoundIterator extends OnlineInitialRoundIterator<SGDObjectiveTerm> {
+public class SGDOnlineInitialRoundIterator extends OnlineInitialRoundIterator<SGDOnlineObjectiveTerm> {
     public SGDOnlineInitialRoundIterator(
-            SGDOnlineTermStore parentStore, List<WeightedRule> rules,
-            AtomManager atomManager, OnlineTermGenerator<SGDObjectiveTerm, RandomVariableAtom> termGenerator,
-            List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
+            OnlineTermStore parentStore, List<WeightedRule> rules,
+            AtomManager atomManager, OnlineTermGenerator<SGDOnlineObjectiveTerm, RandomVariableAtom> termGenerator,
+            List<SGDOnlineObjectiveTerm> termCache, List<SGDOnlineObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize);
@@ -59,7 +60,7 @@ public class SGDOnlineInitialRoundIterator extends OnlineInitialRoundIterator<SG
     private void flushTermCache(String termPagePath) {
         // Count the exact size we will need to write.
         int termsSize = 0;
-        for (SGDObjectiveTerm term : termCache) {
+        for (SGDOnlineObjectiveTerm term : termCache) {
             termsSize += term.fixedByteSize();
         }
 
@@ -76,7 +77,7 @@ public class SGDOnlineInitialRoundIterator extends OnlineInitialRoundIterator<SG
         termBuffer.putInt(termCache.size());
 
         // Now put in all the terms.
-        for (SGDObjectiveTerm term : termCache) {
+        for (SGDOnlineObjectiveTerm term : termCache) {
             term.writeFixedValues(termBuffer);
         }
 

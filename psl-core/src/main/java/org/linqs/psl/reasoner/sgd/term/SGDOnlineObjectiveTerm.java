@@ -17,10 +17,12 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.Online;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 
 import java.nio.ByteBuffer;
 
@@ -39,6 +41,10 @@ public class SGDOnlineObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private int[] variableIndexes;
 
+    private short observed_size;
+    private float[] observed_coefficients;
+    private int[] observedIndexes;
+
     public SGDOnlineObjectiveTerm(VariableTermStore<SGDOnlineObjectiveTerm, RandomVariableAtom> termStore,
                                   boolean squared, boolean hinge,
                                   Online<RandomVariableAtom> online,
@@ -53,10 +59,19 @@ public class SGDOnlineObjectiveTerm implements ReasonerTerm  {
         coefficients = online.getCoefficients();
         constant = online.getConstant();
 
+        observed_size = (short)online.observed_size();
+        observed_coefficients = online.getObservedCoefficients();
+
         variableIndexes = new int[size];
         RandomVariableAtom[] variables = online.getVariables();
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
+        }
+
+        observedIndexes = new int[observed_size];
+        ObservedAtom[] observed = online.getObserveds();
+        for (int i = 0; i < observed_size; i++) {
+            observedIndexes[i] = ((OnlineTermStore)termStore).getObservedIndex(observed[i]);
         }
     }
 
@@ -126,7 +141,9 @@ public class SGDOnlineObjectiveTerm implements ReasonerTerm  {
             + Float.SIZE  // constant
             + Float.SIZE  // learningRate
             + Short.SIZE  // size
-            + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
+            + Short.SIZE  // observed size
+            + size * (Float.SIZE + Integer.SIZE)  // coefficients + variableIndexes
+            + observed_size * (Float.SIZE + Integer.SIZE);  // observed coefficients + observedIndexes
 
         return bitSize / 8;
     }
@@ -142,10 +159,16 @@ public class SGDOnlineObjectiveTerm implements ReasonerTerm  {
         fixedBuffer.putFloat(constant);
         fixedBuffer.putFloat(learningRate);
         fixedBuffer.putShort(size);
+        fixedBuffer.putShort(observed_size);
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
             fixedBuffer.putInt(variableIndexes[i]);
+        }
+
+        for (int i = 0; i < observed_size; i++) {
+            fixedBuffer.putFloat(observed_coefficients[i]);
+            fixedBuffer.putInt(observedIndexes[i]);
         }
     }
 
@@ -159,6 +182,7 @@ public class SGDOnlineObjectiveTerm implements ReasonerTerm  {
         constant = fixedBuffer.getFloat();
         learningRate = fixedBuffer.getFloat();
         size = fixedBuffer.getShort();
+        observed_size = fixedBuffer.getShort();
 
         // Make sure that there is enough room for all these variables.
         if (coefficients.length < size) {
@@ -170,6 +194,17 @@ public class SGDOnlineObjectiveTerm implements ReasonerTerm  {
             coefficients[i] = fixedBuffer.getFloat();
             variableIndexes[i] = fixedBuffer.getInt();
         }
+
+        if (observed_coefficients.length < observed_size) {
+            observed_coefficients = new float[observed_size];
+            observedIndexes = new int[observed_size];
+        }
+
+        for (int i = 0; i < observed_size; i++) {
+            observed_coefficients[i] = fixedBuffer.getFloat();
+            observedIndexes[i] = fixedBuffer.getInt();
+        }
+
     }
 
     @Override

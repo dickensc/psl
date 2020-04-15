@@ -25,10 +25,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class SGDOnlineCacheIterator extends OnlineCacheIterator<SGDObjectiveTerm> {
+public class SGDOnlineCacheIterator extends OnlineCacheIterator<SGDOnlineObjectiveTerm> {
     public SGDOnlineCacheIterator(
             SGDOnlineTermStore parentStore, boolean readonly,
-            List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
+            List<SGDOnlineObjectiveTerm> termCache, List<SGDOnlineObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
@@ -62,7 +62,7 @@ public class SGDOnlineCacheIterator extends OnlineCacheIterator<SGDObjectiveTerm
         // Use the terms from the pool.
 
         for (int i = 0; i < numTerms; i++) {
-            SGDObjectiveTerm term = termPool.get(i);
+            SGDOnlineObjectiveTerm term = termPool.get(i);
             term.read(termBuffer, volatileBuffer);
             termCache.add(term);
         }

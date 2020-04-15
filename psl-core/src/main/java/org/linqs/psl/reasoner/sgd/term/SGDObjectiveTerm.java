@@ -18,7 +18,7 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.reasoner.term.Online;
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
@@ -41,21 +41,21 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private int[] variableIndexes;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
-            boolean squared, boolean hinge,
-            Online<RandomVariableAtom> online,
-            float weight, float learningRate) {
+                            boolean squared, boolean hinge,
+                            Hyperplane<RandomVariableAtom> hyperplane,
+                            float weight, float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
 
         this.weight = weight;
         this.learningRate = learningRate;
 
-        size = (short)online.size();
-        coefficients = online.getCoefficients();
-        constant = online.getConstant();
+        size = (short)hyperplane.size();
+        coefficients = hyperplane.getCoefficients();
+        constant = hyperplane.getConstant();
 
         variableIndexes = new int[size];
-        RandomVariableAtom[] variables = online.getVariables();
+        RandomVariableAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
@@ -121,13 +121,13 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      */
     public int fixedByteSize() {
         int bitSize =
-            Byte.SIZE  // squared
-            + Byte.SIZE  // hinge
-            + Float.SIZE  // weight
-            + Float.SIZE  // constant
-            + Float.SIZE  // learningRate
-            + Short.SIZE  // size
-            + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
+                Byte.SIZE  // squared
+                        + Byte.SIZE  // hinge
+                        + Float.SIZE  // weight
+                        + Float.SIZE  // constant
+                        + Float.SIZE  // learningRate
+                        + Short.SIZE  // size
+                        + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
 
         return bitSize / 8;
     }

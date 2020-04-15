@@ -228,6 +228,10 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
         return variables.keySet();
     }
 
+    public Iterable<ObservedAtom> getObserved() {
+        return observed.keySet();
+    }
+
     @Override
     public float[] getVariableValues() {
         return variableValues;
@@ -236,6 +240,10 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
     @Override
     public int getVariableIndex(RandomVariableAtom variable) {
         return variables.get(variable).intValue();
+    }
+
+    public int getObservedIndex(ObservedAtom variable) {
+        return observed.get(variable).intValue();
     }
 
     @Override
