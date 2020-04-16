@@ -145,7 +145,7 @@ public abstract class OnlineCacheIterator<T extends ReasonerTerm> implements Onl
      * We will always settle outstanding pages before trying to get the next term.
      */
     private T fetchNextTerm() {
-        // The cache is exhaused, fill it up.
+        // The cache is exhausted, fill it up.
         if (nextCachedTermIndex >= termCache.size()) {
             // Flush all the volatile terms.
             flushCache();
