@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term.online;
 
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 

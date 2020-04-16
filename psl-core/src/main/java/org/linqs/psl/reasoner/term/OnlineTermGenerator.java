@@ -211,7 +211,7 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
                     // If the local variable already exists, just add to its coefficient.
                     online.appendObservedCoefficient(localIndex, coefficient);
                 } else {
-                    online.addObservedTerm((V)variable, coefficient);
+                    online.addObservedTerm((ObservedAtom) variable, coefficient);
                 }
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");

@@ -18,9 +18,14 @@
 package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.config.Config;
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.reasoner.sgd.term.SGDOnlineObjectiveTerm;
+import org.linqs.psl.reasoner.term.Online;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
@@ -82,7 +87,10 @@ public class SGDOnlineReasoner implements Reasoner {
     private boolean printInitialObj;
     private boolean objectiveBreak;
 
-    public SGDOnlineReasoner() {
+    private AtomManager atomManager;
+
+    public SGDOnlineReasoner(AtomManager atomManager) {
+        atomManager = atomManager;
         maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
         objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
         printObj = Config.getBoolean(PRINT_OBJECTIVE, PRINT_OBJECTIVE_DEFAULT);
@@ -144,6 +152,22 @@ public class SGDOnlineReasoner implements Reasoner {
 
             iteration++;
         }
+
+        // Harcoded terms to append to our cache pages
+
+        // Construct new term from example simple-acquaintances
+        // 20: Lived(P1, L) & Lived(P2, L) & (P1 != P2) -> Knows(P1, P2) ^2
+        // Lived: 0 0 1
+        // Lived: 1 0 1
+        // Knows: 0 1
+
+        Online<RandomVariableAtom> newTerm = new Online<>(RandomVariableAtom.class, 1, 2, -1.0f * (float)2);
+        GeneralFunction newFTerm = new GeneralFunction(true, true, 1);
+        // Might not work because we are creating new constants instead of grabbing existing instances
+        RandomVariableAtom rvAtom = (RandomVariableAtom)atomManager.getAtom(Predicate.get("Knows"), new UniqueStringID("0"), new UniqueStringID("1"));
+        newFTerm.add(-1.0f, rvAtom);
+
+        //TODO: Add the observed atoms to the new function term
 
         termStore.syncAtoms();
 

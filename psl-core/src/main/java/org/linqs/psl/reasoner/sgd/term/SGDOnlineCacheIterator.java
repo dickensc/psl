@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
+import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.reasoner.term.online.OnlineCacheIterator;
 import org.linqs.psl.util.RuntimeStats;
 

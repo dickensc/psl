@@ -39,7 +39,7 @@ public class SGDOnlineInference extends InferenceApplication {
 
     @Override
     protected Reasoner createReasoner() {
-        return new SGDOnlineReasoner();
+        return new SGDOnlineReasoner(atomManager);
     }
 
     @Override
