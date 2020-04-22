@@ -146,7 +146,7 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
      * Construct a online from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    private Online<V> processOnline(GeneralFunction sum, OnlineTermStore<T> termStore) {
+    public Online<V> processOnline(GeneralFunction sum, OnlineTermStore<T> termStore) {
 
         Online<V> online = new Online<V>(getLocalVariableType(), sum.size(), sum.observedSize(), -1.0f * (float)sum.getConstant());
 
@@ -196,7 +196,7 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
                 // Check to see if we have seen this variable before in this online.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
                 // variables per online.
-                int localIndex = online.indexOfObserved((V)variable);
+                int localIndex = online.indexOfObserved(variable);
                 if (localIndex != -1) {
                     // If this function came from a logical rule
                     // and the sign of the current coefficient and the coefficient of this variable do not match,

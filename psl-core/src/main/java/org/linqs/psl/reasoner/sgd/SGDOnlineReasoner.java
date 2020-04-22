@@ -19,15 +19,19 @@ package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.reasoner.sgd.term.SGDOnlineObjectiveTerm;
+import org.linqs.psl.reasoner.sgd.term.SGDOnlineTermStore;
 import org.linqs.psl.reasoner.term.Online;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.slf4j.Logger;
@@ -113,7 +117,7 @@ public class SGDOnlineReasoner implements Reasoner {
         }
 
         @SuppressWarnings("unchecked")
-        VariableTermStore<SGDOnlineObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDOnlineObjectiveTerm, RandomVariableAtom>)baseTermStore;
+         SGDOnlineTermStore termStore = (SGDOnlineTermStore)baseTermStore;
 
         // This must be called after the term store has to correct variable capacity.
         // A reallocation can cause this array to become out-of-date.
@@ -153,6 +157,12 @@ public class SGDOnlineReasoner implements Reasoner {
             iteration++;
         }
 
+        termStore.syncAtoms();
+
+        /**
+         * TEST Online read and write new term
+         * **/
+
         // Harcoded terms to append to our cache pages
 
         // Construct new term from example simple-acquaintances
@@ -167,9 +177,106 @@ public class SGDOnlineReasoner implements Reasoner {
         RandomVariableAtom rvAtom = (RandomVariableAtom)atomManager.getAtom(Predicate.get("Knows"), new UniqueStringID("0"), new UniqueStringID("1"));
         newFTerm.add(-1.0f, rvAtom);
 
-        //TODO: Add the observed atoms to the new function term
+        ObservedAtom obsAtom_1 = (ObservedAtom) atomManager.getAtom(Predicate.get("Lived"), new UniqueStringID("0"), new UniqueStringID("0"));
+        ObservedAtom obsAtom_2 = (ObservedAtom) atomManager.getAtom(Predicate.get("Lived"), new UniqueStringID("1"), new UniqueStringID("0"));
+        obsAtom_1.setValue(1);
+        obsAtom_2.setValue(1);
+
+        newFTerm.add(1.0f, obsAtom_1);
+        newFTerm.add(1.0f, obsAtom_2);
+
+        // create term
+        Online<RandomVariableAtom> online = new Online<>(RandomVariableAtom.class, newFTerm.size(), newFTerm.observedSize(), -1.0f * (float)newFTerm.getConstant());
+
+        for (int i = 0; i < newFTerm.size(); i++) {
+            float coefficient = (float)newFTerm.getCoefficient(i);
+            FunctionTerm term = newFTerm.getTerm(i);
+
+            if (term instanceof RandomVariableAtom) {
+                RandomVariableAtom variable = termStore.createLocalVariable((RandomVariableAtom)term);
+
+                // Check to see if we have seen this variable before in this online.
+                // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
+                // variables per online.
+                int localIndex = online.indexOfVariable((RandomVariableAtom)variable);
+                if (localIndex != -1) {
+
+                    // If the local variable already exists, just add to its coefficient.
+                    online.appendCoefficient(localIndex, coefficient);
+                } else {
+                    online.addTerm((RandomVariableAtom)variable, coefficient);
+                }
+            } else if (term.isConstant()) {
+                // Subtracts because online is stored as coeffs^T * x = constant.
+                online.setConstant(online.getConstant() - (float)(coefficient * term.getValue()));
+            } else {
+                throw new IllegalArgumentException("Unexpected summand: " + newFTerm + "[" + i + "] (" + term + ").");
+            }
+        }
+
+        // add observed terms to term
+        for (int i = 0; i < newFTerm.observedSize(); i++) {
+            float coefficient = (float)newFTerm.getObservedCoefficient(i);
+            FunctionTerm term = newFTerm.getObservedTerm(i);
+
+            if (term instanceof ObservedAtom) {
+                ObservedAtom variable = termStore.createLocalObservedVariable((ObservedAtom)term);
+
+                // Check to see if we have seen this variable before in this online.
+                // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
+                // variables per online.
+                int localIndex = online.indexOfObserved((ObservedAtom)variable);
+                if (localIndex != -1) {
+                    // If the local variable already exists, just add to its coefficient.
+                    online.appendObservedCoefficient(localIndex, coefficient);
+                } else {
+                    online.addObservedTerm((ObservedAtom) variable, coefficient);
+                }
+            } else {
+                throw new IllegalArgumentException("Unexpected summand: " + newFTerm + "[" + i + "] (" + term + ").");
+            }
+        }
+        SGDOnlineObjectiveTerm objTerm = new SGDOnlineObjectiveTerm(termStore, true, true,
+                online, 20, LEARNING_RATE_DEFAULT);
+        termStore.add(null, objTerm);
+
+        // out of map state, continue optimization
+        variableValues = termStore.getVariableValues();
+        iteration = 1;
+        if (printObj) {
+            log.trace("objective:Iterations,Time(ms),Objective");
+
+            if (printInitialObj) {
+                objective = computeObjective(termStore, variableValues);
+                log.trace("objective:{},{},{}", 0, 0, objective);
+            }
+        }
+
+        while (iteration <= maxIter
+                && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tolerance)))) {
+            long start = System.currentTimeMillis();
+
+            for (SGDOnlineObjectiveTerm term : termStore) {
+                term.minimize(iteration, variableValues);
+            }
+
+            long end = System.currentTimeMillis();
+            oldObjective = objective;
+            objective = computeObjective(termStore, variableValues);
+            time += end - start;
+
+            if (printObj) {
+                log.info("objective:{},{},{}", iteration, time, objective);
+            }
+
+            iteration++;
+        }
 
         termStore.syncAtoms();
+
+        /**
+         * TEST Online read and write new term complete
+         * **/
 
         log.info("Optimization completed in {} iterations. Objective.: {}", iteration - 1, objective);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());

@@ -131,7 +131,7 @@ public class Online<E extends ReasonerLocalVariable> {
         return ArrayUtils.indexOf(variables, VariableIndex, needle);
     }
 
-    public int indexOfObserved(E needle) {
+    public int indexOfObserved(ObservedAtom needle) {
         return ArrayUtils.indexOf(observed, ObservedIndex, needle);
     }
 

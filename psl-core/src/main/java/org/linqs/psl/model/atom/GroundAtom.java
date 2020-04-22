@@ -69,6 +69,10 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         return varMap;
     }
 
+    public void setValue(float newValue) {
+        this.value = newValue;
+    }
+
     /**
      * First order by value (descending), the predicate name (natural),
      * and then the arguments (in order).

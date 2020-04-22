@@ -99,6 +99,9 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
     protected int seenTermCount;
     protected int numPages;
 
+    protected List<T> newTermBuffer;
+    protected static final int INITIAL_NEW_TERM_BUFFER_SIZE = 1000;
+
     protected OnlineTermGenerator<T, RandomVariableAtom> termGenerator;
 
     protected int pageSize;
@@ -196,6 +199,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
+        newTermBuffer = new ArrayList<T>(INITIAL_NEW_TERM_BUFFER_SIZE);
 
         initialRound = true;
         activeIterator = null;
@@ -322,6 +326,10 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
         }
     }
 
+    public void rewrite(String termPagePath, List<T> newPageTerms) {
+        //TODO
+    }
+
     @Override
     public int size() {
         return seenTermCount;
@@ -329,7 +337,12 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
 
     @Override
     public void add(GroundRule rule, T term) {
-        throw new UnsupportedOperationException();
+        this.add(term);
+    }
+
+    public void add(T term) {
+        //TODO dynamic array check
+        newTermBuffer.add(term);
     }
 
     @Override

@@ -192,6 +192,13 @@ public abstract class OnlineCacheIterator<T extends ReasonerTerm> implements Onl
 
         readPage(termPagePath, volatilePagePath);
 
+        if (currentPage == numPages - 1 && !parentStore.newTermBuffer.isEmpty()) {
+            // Todo. what if page is full or not enough space for all terms?
+            termCache.addAll(parentStore.newTermBuffer);
+            parentStore.rewrite(termPagePath, termCache);
+            parentStore.newTermBuffer.clear();
+        }
+
         if (shufflePage) {
             // Remember that the shuffle map may be larger than the term cache (for not full pages).
             for (int i = 0; i < termCache.size(); i++) {
