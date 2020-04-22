@@ -36,7 +36,7 @@ public class Online<E extends ReasonerLocalVariable> {
 
     @SuppressWarnings("unchecked")
     public Online(Class<E> localVariableClass, int maxVariableSize, int maxObservedSize, float constant) {
-        this((E[])Array.newInstance(localVariableClass, maxVariableSize), (ObservedAtom[])Array.newInstance(localVariableClass, maxObservedSize),
+        this((E[])Array.newInstance(localVariableClass, maxVariableSize), new ObservedAtom [maxObservedSize],
                 new float[maxVariableSize], new float[maxObservedSize], constant, 0, 0);
     }
 

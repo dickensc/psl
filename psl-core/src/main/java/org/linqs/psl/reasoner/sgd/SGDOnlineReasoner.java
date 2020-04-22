@@ -48,7 +48,7 @@ public class SGDOnlineReasoner implements Reasoner {
     /**
      * Prefix of property keys used by this class.
      */
-    public static final String CONFIG_PREFIX = "sgd";
+    public static final String CONFIG_PREFIX = "sgdOnline";
 
     /**
      * The maximum number of iterations of SGD to perform in a round of inference.
