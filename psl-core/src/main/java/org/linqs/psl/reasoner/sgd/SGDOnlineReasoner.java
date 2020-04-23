@@ -93,8 +93,10 @@ public class SGDOnlineReasoner implements Reasoner {
 
     private AtomManager atomManager;
 
-    public SGDOnlineReasoner(AtomManager atomManager) {
-        atomManager = atomManager;
+    public SGDOnlineReasoner(AtomManager providedAtomManager) {
+        System.out.println(providedAtomManager);
+        atomManager = providedAtomManager;
+        System.out.println(atomManager);
         maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
         objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
         printObj = Config.getBoolean(PRINT_OBJECTIVE, PRINT_OBJECTIVE_DEFAULT);
@@ -159,6 +161,9 @@ public class SGDOnlineReasoner implements Reasoner {
 
         termStore.syncAtoms();
 
+        log.info("Optimization completed in {} iterations. Objective.: {}", iteration - 1, objective);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+
         /**
          * TEST Online read and write new term
          * **/
@@ -171,19 +176,25 @@ public class SGDOnlineReasoner implements Reasoner {
         // Lived: 1 0 1
         // Knows: 0 1
 
-        Online<RandomVariableAtom> newTerm = new Online<>(RandomVariableAtom.class, 1, 2, -1.0f * (float)2);
         GeneralFunction newFTerm = new GeneralFunction(true, true, 1);
         // Might not work because we are creating new constants instead of grabbing existing instances
-        RandomVariableAtom rvAtom = (RandomVariableAtom)atomManager.getAtom(Predicate.get("Knows"), new UniqueStringID("0"), new UniqueStringID("1"));
-        newFTerm.add(-1.0f, rvAtom);
+        UniqueStringID id1 = new UniqueStringID("0");
+        UniqueStringID id2 = new UniqueStringID("1");
+        System.out.println(this.atomManager);
+        RandomVariableAtom rvAtom = (RandomVariableAtom)atomManager.getAtom(Predicate.get("Knows"), id1, id2);
+        newFTerm.add(3.0f, rvAtom);
 
         ObservedAtom obsAtom_1 = (ObservedAtom) atomManager.getAtom(Predicate.get("Lived"), new UniqueStringID("0"), new UniqueStringID("0"));
         ObservedAtom obsAtom_2 = (ObservedAtom) atomManager.getAtom(Predicate.get("Lived"), new UniqueStringID("1"), new UniqueStringID("0"));
         obsAtom_1.setValue(1);
         obsAtom_2.setValue(1);
 
-        newFTerm.add(1.0f, obsAtom_1);
-        newFTerm.add(1.0f, obsAtom_2);
+        newFTerm.add(-1.0f, obsAtom_1);
+        newFTerm.add(-1.0f, obsAtom_2);
+
+        System.out.println(obsAtom_1);
+        System.out.println(obsAtom_2);
+        System.out.println(newFTerm);
 
         // create term
         Online<RandomVariableAtom> online = new Online<>(RandomVariableAtom.class, newFTerm.size(), newFTerm.observedSize(), -1.0f * (float)newFTerm.getConstant());
@@ -236,8 +247,9 @@ public class SGDOnlineReasoner implements Reasoner {
                 throw new IllegalArgumentException("Unexpected summand: " + newFTerm + "[" + i + "] (" + term + ").");
             }
         }
-        SGDOnlineObjectiveTerm objTerm = new SGDOnlineObjectiveTerm(termStore, true, true,
-                online, 20, LEARNING_RATE_DEFAULT);
+
+        SGDOnlineObjectiveTerm objTerm = new SGDOnlineObjectiveTerm(termStore, true, false,
+                online, 1000000000, LEARNING_RATE_DEFAULT);
         termStore.add(null, objTerm);
 
         // out of map state, continue optimization
@@ -257,7 +269,19 @@ public class SGDOnlineReasoner implements Reasoner {
             long start = System.currentTimeMillis();
 
             for (SGDOnlineObjectiveTerm term : termStore) {
+                if (term == objTerm) {
+                    System.out.println(term);
+                    for (int index : term.variableIndexes) {
+                        System.out.println(variableValues[index]);
+                    }
+                }
                 term.minimize(iteration, variableValues);
+                if (term == objTerm) {
+                    System.out.println(term);
+                    for (int index : term.variableIndexes) {
+                        System.out.println(variableValues[index]);
+                    }
+                }
             }
 
             long end = System.currentTimeMillis();

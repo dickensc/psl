@@ -143,7 +143,7 @@ public class GeneralFunction implements FunctionTerm {
     }
 
     public float getObservedCoefficient(int index) {
-        return coefficients[index];
+        return observedCoefficients[index];
     }
 
     public FunctionTerm getTerm(int index) {
@@ -151,7 +151,7 @@ public class GeneralFunction implements FunctionTerm {
     }
 
     public FunctionTerm getObservedTerm(int index) {
-        return terms[index];
+        return observedTerms[index];
     }
 
     @Override

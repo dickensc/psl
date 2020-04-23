@@ -153,7 +153,6 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
         for (int i = 0; i < sum.size(); i++) {
             float coefficient = (float)sum.getCoefficient(i);
             FunctionTerm term = sum.getTerm(i);
-
             if (term instanceof RandomVariableAtom) {
                 RandomVariableAtom variable = termStore.createLocalVariable((RandomVariableAtom)term);
 
@@ -189,7 +188,6 @@ public abstract class OnlineTermGenerator<T extends ReasonerTerm, V extends Reas
         for (int i = 0; i < sum.observedSize(); i++) {
             float coefficient = (float)sum.getObservedCoefficient(i);
             FunctionTerm term = sum.getObservedTerm(i);
-
             if (term instanceof ObservedAtom) {
                 ObservedAtom variable = termStore.createLocalObservedVariable((ObservedAtom)term);
 

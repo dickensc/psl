@@ -141,6 +141,7 @@ public class RDBMSDatabase extends Database {
          *         - Yes, call the function and instantiate as an ObservedAtom.
          *         - No, unknown state.
          */
+
         if (predicate instanceof StandardPredicate) {
             return getAtom((StandardPredicate)predicate, arguments);
         } else if (predicate instanceof FunctionalPredicate) {
@@ -515,7 +516,6 @@ public class RDBMSDatabase extends Database {
         } else {
             result = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
         }
-
         return result;
     }
 

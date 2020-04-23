@@ -196,6 +196,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
         ensureVariableCapacity(atomManager.getCachedRVACount());
+        ensureObservedCapacity(atomManager.getCachedObservedCount());
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
@@ -286,7 +287,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
         // Got a new variable.
 
         if (observed.size() >= observedAtoms.length) {
-            ensureVariableCapacity(variables.size() * 2);
+            ensureObservedCapacity(observed.size() * 2);
         }
 
         int index = observed.size();
@@ -326,6 +327,34 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
         }
     }
 
+    public void ensureObservedCapacity(int capacity) {
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Observed capacity must be non-negative. Got: " + capacity);
+        }
+
+        if (observed == null || observed.size() == 0) {
+            // If there are no variables, then (re-)allocate the variable storage.
+            // The default load factor for Java HashSets is 0.75.
+            observed = new HashMap<ObservedAtom, Integer>((int)Math.ceil(capacity / 0.75));
+
+            observedValues = new float[capacity];
+            observedAtoms = new ObservedAtom[capacity];
+        } else if (observed.size() < capacity) {
+            // Don't bother with small reallocations, if we are reallocating make a lot of room.
+            if (capacity < observed.size() * 2) {
+                capacity = observed.size() * 2;
+            }
+
+            // Reallocate and copy over variables.
+            Map<ObservedAtom, Integer> newObservations = new HashMap<>((int)Math.ceil(capacity / 0.75));
+            newObservations.putAll(observed);
+            observed = newObservations;
+
+            observedValues = Arrays.copyOf(observedValues, capacity);
+            observedAtoms = Arrays.copyOf(observedAtoms, capacity);
+        }
+    }
+
     public void rewrite(String termPagePath, List<T> newPageTerms) {
         //TODO
     }
@@ -342,6 +371,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> implements Variabl
 
     public void add(T term) {
         //TODO dynamic array check
+        seenTermCount = seenTermCount + 1;
         newTermBuffer.add(term);
     }
 

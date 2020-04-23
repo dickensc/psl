@@ -50,6 +50,7 @@ public class AtomCache {
 
     // The number of random variable atoms that have been instantiated.
     private int rvaCount;
+    private int observedCount;
 
     /**
      * Constructs a new AtomCache for a Database.
@@ -60,6 +61,7 @@ public class AtomCache {
         this.db = db;
         this.cache = new HashMap<QueryAtom, GroundAtom>();
         this.rvaCount = 0;
+        this.observedCount = 0;
     }
 
     /**
@@ -82,6 +84,10 @@ public class AtomCache {
 
     public int getRVACount() {
         return rvaCount;
+    }
+
+    public int getObservedCount() {
+        return observedCount;
     }
 
     /**
@@ -110,6 +116,8 @@ public class AtomCache {
 
             if (atom instanceof RandomVariableAtom) {
                 rvaCount--;
+            } else if (atom instanceof RandomVariableAtom) {
+                observedCount--;
             }
 
             return true;
@@ -156,12 +164,12 @@ public class AtomCache {
                 throw new IllegalStateException("Asked to instantiate an observed" +
                         " atom that already exists as a random variable atom (target): " + key);
             }
-
             return (ObservedAtom)cache.get(key);
         }
 
         ObservedAtom atom = new ObservedAtom(predicate, args, value);
         cache.put(key, atom);
+        observedCount++;
 
         return atom;
     }
@@ -190,14 +198,12 @@ public class AtomCache {
                 throw new IllegalStateException("Asked to instantiate a random variable" +
                         " atom (target) that already exists as an observed atom: " + key);
             }
-
             return (RandomVariableAtom)cache.get(key);
         }
 
         RandomVariableAtom atom = new RandomVariableAtom(predicate, args, value);
         cache.put(key, atom);
         rvaCount++;
-
         return atom;
     }
 }

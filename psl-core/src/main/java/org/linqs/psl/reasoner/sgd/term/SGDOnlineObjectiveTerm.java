@@ -39,7 +39,7 @@ public class SGDOnlineObjectiveTerm implements ReasonerTerm  {
 
     private short size;
     private float[] coefficients;
-    private int[] variableIndexes;
+    public int[] variableIndexes;
 
     private short observed_size;
     private float[] observed_coefficients;

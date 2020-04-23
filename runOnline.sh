@@ -44,6 +44,8 @@ function run() {
    ./run.sh ${onlineOptions}
 
    popd > /dev/null
+
+   cat ../psl-examples/simple-acquaintances/cli/inferred-predicates/KNOWS.txt | grep "0\t1"
 }
 
 # Common to all examples.
