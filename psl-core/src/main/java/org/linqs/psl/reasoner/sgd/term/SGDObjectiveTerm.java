@@ -23,7 +23,6 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -36,7 +35,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private float constant;
     private float learningRate;
 
-    private short size;
+    private int size;
     private float[] coefficients;
     private int[] variableIndexes;
 
@@ -50,7 +49,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         this.weight = weight;
         this.learningRate = learningRate;
 
-        size = (short)hyperplane.size();
+        size = hyperplane.size();
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
@@ -152,7 +151,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         fixedBuffer.putFloat(weight);
         fixedBuffer.putFloat(constant);
         fixedBuffer.putFloat(learningRate);
-        fixedBuffer.putShort(size);
+        fixedBuffer.putInt(size);
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
