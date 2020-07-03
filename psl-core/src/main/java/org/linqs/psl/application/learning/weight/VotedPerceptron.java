@@ -143,12 +143,12 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
         }
 
         // Compute the initial objective.
-        if (log.isDebugEnabled() && evaluator != null) {
+        if (log.isDebugEnabled() && evaluators != null) {
             // Compute the MPE state before evaluating so variables have assigned values.
             computeMPEState();
 
-            evaluator.compute(trainingMap);
-            double objective = -1.0 * evaluator.getNormalizedRepMetric();
+            computeEvaluators();
+            double objective = -1.0 * getObjective();
 
             log.debug("Initial Training Objective: {}", objective);
         }
@@ -216,12 +216,12 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
             }
 
             double objective = -1.0;
-            if ((cutObjective || log.isDebugEnabled()) && evaluator != null) {
+            if ((cutObjective || log.isDebugEnabled()) && evaluators != null) {
                 // Compute the MPE state before evaluating so variables have assigned values.
                 computeMPEState();
 
-                evaluator.compute(trainingMap);
-                objective = -1.0 * evaluator.getNormalizedRepMetric();
+                computeEvaluators();
+                objective = -1.0 * getObjective();
 
                 if (cutObjective && step > 0 && objective > lastObjective) {
                     log.trace("Objective increased: {} -> {}, cutting step size: {} -> {}.",

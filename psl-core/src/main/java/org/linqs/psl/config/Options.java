@@ -21,11 +21,8 @@ import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.bayesian.GaussianProcessKernel;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.rdbms.QueryRewriter;
+import org.linqs.psl.evaluation.statistics.*;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
-import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
-import org.linqs.psl.evaluation.statistics.RankingEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -324,7 +321,7 @@ public class Options {
     public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(
         "gridsearch.weights",
         "0.001:0.01:0.1:1:10",
-        "A comma-separated list of possible weights. These weights should be in some sorted order."
+        "A colon-separated list of possible weights. These weights should be in some sorted order."
     );
 
     public static final Option GROUNDING_REWRITE_QUERY = new Option(
@@ -637,7 +634,7 @@ public class Options {
     public static final Option WLA_RS_SCALING_FACTORS = new Option(
         "ranksearch.scalingfactors",
         "1:2:10:100",
-        "A comma-separated list of scaling factors."
+        "A colon-separated list of scaling factors."
     );
 
     public static final Option RDBMS_FETCH_SIZE = new Option(
@@ -745,6 +742,12 @@ public class Options {
         "Warn on rules the streaming term store can't handle."
     );
 
+    public static final Option EVAL_UNF_REPRESENTATIVE = new Option(
+            "unfairnessevaluator.representative",
+            UnfairnessEvaluator.RepresentativeMetric.NON_PARITY.toString(),
+            "The representative metric (see UnfairnessEvaluator.RepresentativeMetric)."
+    );
+
     public static final Option WLA_VP_AVERAGE_STEPS = new Option(
         "votedperceptron.averagesteps",
         false,
@@ -822,6 +825,14 @@ public class Options {
         "The evaluator to use during weight learning."
         + " Not all weight learning methods will use the evaluator for decision making,"
         + " but even those will typically output an evaluator score each iteration."
+        + " This can be a colon-separated list of evaluator class names."
+    );
+
+    public static final Option WLA_EVAL_FACTORS = new Option(
+            "weightlearning.evaluators",
+            "1",
+            "The factors of the evaluators to use during weight learning."
+                    + " This is a colon-separated list of numbers."
     );
 
     public static final Option WLA_RANDOM_WEIGHTS = new Option(

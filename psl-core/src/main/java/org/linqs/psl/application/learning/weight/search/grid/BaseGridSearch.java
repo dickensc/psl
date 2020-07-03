@@ -139,9 +139,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected double inspectLocation(double[] weights) {
         computeMPEState();
 
-        evaluator.compute(trainingMap);
+        computeEvaluators();
 
-        return -1.0 * evaluator.getNormalizedRepMetric();
+        return  -1.0 * getObjective();
     }
 
     /**

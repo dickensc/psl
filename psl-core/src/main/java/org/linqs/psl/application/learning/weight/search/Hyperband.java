@@ -180,8 +180,9 @@ public class Hyperband extends WeightLearningApplication {
     protected double run(double[] weights) {
         computeMPEState();
 
-        evaluator.compute(trainingMap);
-        double score = -1.0 * evaluator.getNormalizedRepMetric();
+        computeEvaluators();
+
+        double score = -1.0 * getObjective();
 
         return score;
     }

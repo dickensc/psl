@@ -306,8 +306,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     protected double getFunctionValue(WeightConfig config) {
         setWeights(config);
         computeMPEState();
-        evaluator.compute(trainingMap);
-        return evaluator.getNormalizedRepMetric();
+        computeEvaluators();
+        return -1.0 * getObjective();
     }
 
     // Exploration strategy

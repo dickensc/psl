@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.Evaluator;
@@ -27,6 +28,7 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
 
+import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,9 +54,11 @@ public abstract class WeightLearningApplication implements ModelApplication {
     protected TrainingMap trainingMap;
 
     protected InferenceApplication inference;
-    protected Evaluator evaluator;
+    protected Evaluator[] evaluators;
+    protected double[] evaluatorFactors;
 
     private boolean groundModelInit;
+
 
     /**
      * Flags to track if the current variable configuration is an MPE state.
@@ -62,6 +66,13 @@ public abstract class WeightLearningApplication implements ModelApplication {
      * but besides that it is up to children to set to false when weights are changed.
      */
     protected boolean inMPEState;
+
+    /**
+     * The delimiter to separate rule weights (and lication ids).
+     * Note that we cannot use ',' because our configuration infrastructure will try
+     * interpret it as a list of strings.
+     */
+    public static final String DELIM = ":";
 
     public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB) {
         this.rvDB = rvDB;
@@ -81,7 +92,17 @@ public abstract class WeightLearningApplication implements ModelApplication {
         groundModelInit = false;
         inMPEState = false;
 
-        evaluator = (Evaluator)Options.WLA_EVAL.getNewObject();
+        String[] evaluatorNames = Options.WLA_EVAL.getString().split(DELIM);
+        evaluators = new Evaluator[evaluatorNames.length];
+        for (int i = 0; i < evaluatorNames.length; i ++) {
+            evaluators[i] = (Evaluator)Config.getNewObject(evaluatorNames[i],
+                    ((String)Options.WLA_EVAL.defaultValue()));
+        }
+
+        evaluatorFactors = StringUtils.splitDouble(Options.WLA_EVAL_FACTORS.getString(), DELIM);
+        if (evaluatorFactors.length != evaluators.length) {
+            throw new IllegalArgumentException("Not enough factors provided for evaluators.");
+        }
     }
 
     /**
@@ -185,6 +206,26 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         inference.inference(false, true);
         inMPEState = true;
+    }
+
+    /**
+     * Computes the evaluation statistic at the current state.
+     */
+    protected void computeEvaluators() {
+        for (Evaluator evaluator : evaluators) {
+            evaluator.compute(trainingMap);
+        }
+    }
+
+    /**
+     * Returns the sum of the normalized representative metric of the evaluation statistics at the current state.
+     */
+    protected double getObjective() {
+        double objective = 0;
+        for (int i = 0; i < evaluators.length; i++) {
+            objective = objective + evaluatorFactors[i] * evaluators[i].getNormalizedRepMetric();
+        }
+        return objective;
     }
 
     @Override
