@@ -464,8 +464,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                     }
 
                     if (!evalFilter(
-                            filters.get(variable), variable,
-                            groundAtom.getArguments()[variableIndex],
+                            filters.get(variable), variables,
+                            groundAtom.getArguments(),
                             atomManager, queryRow, variableMap)) {
                         skip = true;
                         break;
@@ -533,7 +533,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
      */
     private boolean evalFilter(
             Formula filter,
-            SummationVariable summationVariable, Constant variableValue,
+            SummationVariable[] summationVariables, Constant[] variableValues,
             AtomManager atomManager, Constant[] queryRow, Map<Variable, Integer> variableMap) {
         if (filter instanceof Atom) {
             // If the summation variable is in this atom, then replace its value and then ground.
@@ -542,12 +542,18 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             Term[] newArguments = null;
 
             for (int i = 0; i < arguments.length; i++) {
-                if (arguments[i].equals(summationVariable.getVariable())) {
-                    if (newArguments == null) {
-                        newArguments = Arrays.copyOf(arguments, arguments.length);
+                for (int j = 0; j < summationVariables.length; j++) {
+                    SummationVariable summationVariable = summationVariables[j];
+                    Constant variableValue = variableValues[j];
+                    if (summationVariable != null) {
+                        if (arguments[i].equals(summationVariable.getVariable())) {
+                            if (newArguments == null) {
+                                newArguments = Arrays.copyOf(arguments, arguments.length);
+                            }
+                            newArguments[i] = variableValue;
+                            break;
+                        }
                     }
-
-                    newArguments[i] = variableValue;
                 }
             }
 
@@ -560,14 +566,14 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         } else if (filter instanceof Negation) {
             return !evalFilter(
                 ((Negation)filter).getFormula(),
-                summationVariable, variableValue,
+                summationVariables, variableValues,
                 atomManager, queryRow, variableMap);
         } else if (filter instanceof Conjunction) {
             Conjunction conjunction = (Conjunction)filter;
             for (int i = 0; i < conjunction.length(); i++) {
                 boolean value = evalFilter(
                     conjunction.get(i),
-                    summationVariable, variableValue,
+                    summationVariables, variableValues,
                     atomManager, queryRow, variableMap);
 
                 if (!value) {
@@ -666,12 +672,19 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             expressionVariableNames.add(var.getName());
         }
 
+        Set<String> summationVariableNames = new HashSet<String>();
+        for (SummationVariable var : expression.getSummationVariables()) {
+            summationVariableNames.add(var.getVariable().getName());
+        }
+
         for (Map.Entry<SummationVariable, Formula> filter : filters.entrySet()) {
             VariableTypeMap filterVars = new VariableTypeMap();
             filter.getValue().collectVariables(filterVars);
 
             for (Variable var : filterVars.keySet()) {
-                if (!(filter.getKey().getVariable().getName().equals(var.getName()) || expressionVariableNames.contains(var.getName()))) {
+                if (!(filter.getKey().getVariable().getName().equals(var.getName()) ||
+                        expressionVariableNames.contains(var.getName()) ||
+                        summationVariableNames.contains(var.getName()))) {
                     throw new IllegalArgumentException(String.format(
                             "Unknown variable (%s) used in filter. " +
                             "All filter variables must either be the filter argument or appear " +

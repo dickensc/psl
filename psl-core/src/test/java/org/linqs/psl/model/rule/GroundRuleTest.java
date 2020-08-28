@@ -1002,6 +1002,64 @@ public class GroundRuleTest {
     }
 
     @Test
+    // Friends(+A, +B) >= 1 {A: Nice(A) && Nice(B)}
+    public void testMultipleSummationMultipleFilter() {
+        // Reset the model to not use 100% nice.
+        initModel(false);
+
+        GroundRuleStore store = new MemoryGroundRuleStore();
+        AtomManager manager = new PersistedAtomManager(database);
+
+        Rule rule;
+        List<String> expected;
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
+        Map<SummationVariable, Formula> filters;
+
+        coefficients = Arrays.asList(
+                (Coefficient)(new ConstantNumber(1))
+        );
+
+        atoms = Arrays.asList(
+                (SummationAtomOrAtom)(new SummationAtom(
+                        model.predicates.get("Friends"),
+                        new SummationVariableOrTerm[]{new SummationVariable("A"), new SummationVariable("B")}
+                ))
+        );
+
+        filters = new HashMap<SummationVariable, Formula>();
+
+        // Add a select on A.
+        store = new MemoryGroundRuleStore();
+
+        filters.put(
+                new SummationVariable("A"),
+                new Conjunction(
+                        new QueryAtom(model.predicates.get("Nice"), new Variable("A")),
+                        new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
+                )
+        );
+
+        rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
+                filters,
+                1.0,
+                true
+        );
+
+        expected = Arrays.asList(
+                "1.0: " +
+                        "1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + " +
+                        "1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Bob', 'Derek') + " +
+                        "1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Charlie', 'Derek') + " +
+                        "1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') " +
+                        ">= 1.0 ^2"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
+    }
+
+    @Test
     // |A| * Friends(+A, +B) >= 1 {B: Nice(B)}
     // |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
     // |A| + |B| * Friends(+A, +B) >= 1 {B: Nice(B)}
