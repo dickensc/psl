@@ -23,39 +23,18 @@ import org.linqs.psl.model.term.ConstantType;
 
 import java.util.UUID;
 
-// TODO: OnlineMessage as strictly wrapper rather than parent.
-public class OnlineMessage {
+public abstract class OnlineMessage {
     private UUID identifier;
-    protected String message;
 
     public OnlineMessage(UUID identifier, String message) {
         this.identifier = identifier;
-        setMessage(message);
+        parse(message);
     }
 
-    @Override
-    public String toString() {
-        return String.format(
-                "%s\t%s",
-                identifier,
-                message);
-    }
-
-    public static OnlineMessage getOnlineMessage(String string) {
-        String[] parts = string.split("\t", 2);
-        UUID identifier = UUID.fromString(parts[0].trim());
-        String message = parts[1];
-
-        return new OnlineMessage(identifier, message);
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getMessage() {
-        return message;
-    }
+    /**
+     * Parse the original client command.
+     */
+    protected abstract void parse(String string);
 
     public UUID getIdentifier() {
         return identifier;
@@ -65,8 +44,7 @@ public class OnlineMessage {
      * Parse an atom.
      * The given starting index should point to the predicate.
      */
-    // TODO: Static.
-    protected AtomInfo parseAtom(String[] parts, int startIndex) {
+    protected static AtomInfo parseAtom(String[] parts, int startIndex) {
         StandardPredicate predicate = StandardPredicate.get(parts[startIndex]);
         if (predicate == null) {
             throw new IllegalArgumentException("Unknown predicate: " + parts[startIndex] + ".");
@@ -95,7 +73,7 @@ public class OnlineMessage {
         public Constant[] arguments;
         public float value;
 
-        public AtomInfo(StandardPredicate predicate, Constant[] arguments, float value) {
+        AtomInfo(StandardPredicate predicate, Constant[] arguments, float value) {
             this.predicate = predicate;
             this.arguments = arguments;
             this.value = value;

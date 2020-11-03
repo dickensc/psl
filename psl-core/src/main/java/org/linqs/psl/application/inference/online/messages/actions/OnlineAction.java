@@ -37,7 +37,6 @@ public abstract class OnlineAction extends OnlineMessage {
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
-    // TODO: Move to online message.
     public static OnlineAction getAction(String clientCommand) {
         return getAction(UUID.randomUUID(), clientCommand);
     }
@@ -47,29 +46,24 @@ public abstract class OnlineAction extends OnlineMessage {
 
         if (actionClass.equalsIgnoreCase("add")) {
             return new AddAtom(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("observe")) {
+        } else if (actionClass.equalsIgnoreCase("Observe")) {
             return new ObserveAtom(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("stop")) {
+        } else if (actionClass.equalsIgnoreCase("Stop")) {
             return new Stop(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("sync")) {
+        } else if (actionClass.equalsIgnoreCase("Sync")) {
             return new Sync(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("exit")) {
+        } else if (actionClass.equalsIgnoreCase("Exit")) {
             return new Exit(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("delete")) {
+        } else if (actionClass.equalsIgnoreCase("Delete")) {
             return new DeleteAtom(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("update")) {
+        } else if (actionClass.equalsIgnoreCase("Update")) {
             return new UpdateObservation(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("query")) {
+        } else if (actionClass.equalsIgnoreCase("Query")) {
             return new QueryAtom(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("write")) {
+        } else if (actionClass.equalsIgnoreCase("Write")) {
             return new WriteInferredPredicates(actionID, clientCommand);
         } else {
             throw new IllegalArgumentException("Unknown online action: '" + actionClass + "'.");
         }
     }
-
-    /**
-     * Parse the delimited client command.
-     */
-    protected abstract void parse(String[] parts);
 }

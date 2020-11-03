@@ -37,18 +37,18 @@ public class WriteInferredPredicates extends OnlineAction {
     }
 
     @Override
-    public void setMessage(String newMessage) {
-        parse(newMessage.split("\t"));
-
+    public String toString() {
         if (outputDirectoryPath == null) {
-            message = String.format("WRITE");
+            return String.format("WRITE");
         } else {
-            message = String.format("WRITE\t%s", outputDirectoryPath);
+            return String.format("WRITE\t%s", outputDirectoryPath);
         }
     }
 
     @Override
-    protected void parse(String[] parts) throws IllegalArgumentException {
+    public void parse(String string) {
+        String[] parts = string.split("\t");
+
         assert(parts[0].equalsIgnoreCase("write"));
 
         if (parts.length > 2) {

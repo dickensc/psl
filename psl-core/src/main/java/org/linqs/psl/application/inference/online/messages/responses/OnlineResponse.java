@@ -26,14 +26,11 @@ public abstract class OnlineResponse extends OnlineMessage {
 
     public OnlineResponse(UUID identifier, String serverResponse) {
         super(identifier, serverResponse);
-
-        this.onlineActionID = null;
     }
 
     /**
-     * Construct an OnlineAction given the name and necessary information.
+     * Construct an OnlineResponse given the name and necessary information.
      */
-    // TODO: Move to online message.
     public static OnlineResponse getResponse(String serverResponse) {
         return getResponse(UUID.randomUUID(), serverResponse);
     }

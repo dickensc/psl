@@ -54,10 +54,8 @@ public class AddAtom extends OnlineAction {
     }
 
     @Override
-    public void setMessage(String newMessage) {
-        parse(newMessage.split("\t"));
-
-        message = String.format(
+    public String toString() {
+        return String.format(
                 "ADD\t%s\t%s\t%s\t%f",
                 partition,
                 predicate.getName(),
@@ -66,7 +64,9 @@ public class AddAtom extends OnlineAction {
     }
 
     @Override
-    protected void parse(String[] parts) {
+    public void parse(String string) {
+        String[] parts = string.split("\t");
+
         assert(parts[0].equalsIgnoreCase("add"));
 
         if (parts.length < 4) {

@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.linqs.psl.application.inference.online.messages.OnlineMessage;
+import org.linqs.psl.application.inference.online.messages.OnlinePacket;
 import org.linqs.psl.application.inference.online.messages.actions.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.actions.Stop;
@@ -99,9 +99,10 @@ public class OnlineServer implements Closeable {
     public void onActionExecution(OnlineAction action, OnlineResponse onlineResponse) {
         ClientConnectionThread clientConnectionThread = messageIDConnectionMap.get(action.getIdentifier());
         ObjectOutputStream outputStream = clientConnectionThread.outputStream;
+        OnlinePacket onlinePacket = new OnlinePacket(onlineResponse.getIdentifier(), onlineResponse.toString());
 
         try {
-            outputStream.writeObject(onlineResponse.toString());
+            outputStream.writeObject(onlinePacket.toString());
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -239,7 +240,9 @@ public class OnlineServer implements Closeable {
             }
 
             try {
-                outputStream.writeObject(new ModelInformation(standardPredicates.toArray(new StandardPredicate[]{})).toString());
+                ModelInformation modelInformation = new ModelInformation(standardPredicates.toArray(new StandardPredicate[]{}));
+                OnlinePacket onlinePacket = new OnlinePacket(modelInformation.getIdentifier(), modelInformation.toString());
+                outputStream.writeObject(onlinePacket.toString());
             } catch (IOException ex) {
                 close();
                 throw new RuntimeException(ex);
@@ -248,13 +251,12 @@ public class OnlineServer implements Closeable {
 
         @Override
         public void run() {
-            OnlineMessage clientMessage = null;
+            OnlinePacket packet = null;
             OnlineAction newAction = null;
             while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    clientMessage = OnlineMessage.getOnlineMessage(inputStream.readObject().toString());
-                    newAction = OnlineAction.getAction(clientMessage.getIdentifier(), clientMessage.getMessage());
-                    log.trace("Received action: " + newAction);
+                    packet = OnlinePacket.getOnlinePacket(inputStream.readObject().toString());
+                    newAction = OnlineAction.getAction(packet.getIdentifier(), packet.getMessage());
                 } catch (IOException | ClassNotFoundException ex) {
                     throw new RuntimeException(ex);
                 }

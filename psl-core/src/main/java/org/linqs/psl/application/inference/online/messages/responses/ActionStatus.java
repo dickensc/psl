@@ -39,17 +39,18 @@ public class ActionStatus extends OnlineResponse {
     }
 
     @Override
-    public void setMessage(String newMessage) {
-        parse(newMessage.split("\t", 4));
-
-        message = String.format(
+    public String toString() {
+        return String.format(
                 "ActionStatus\t%s\t%s\t%s",
                 onlineActionID,
                 Boolean.toString(success),
                 statusMessage);
     }
 
-    private void parse(String[] parts) {
+    @Override
+    public void parse(String string) {
+        String[] parts = string.split("\t");
+
         assert(parts[0].equalsIgnoreCase("ActionStatus"));
 
         onlineActionID = UUID.fromString(parts[1].trim());

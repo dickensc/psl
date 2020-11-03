@@ -55,10 +55,8 @@ public class QueryAtomResponse extends OnlineResponse {
     }
 
     @Override
-    public void setMessage(String newMessage) {
-        parse(newMessage.split("\t"));
-
-        message = String.format(
+    public String toString() {
+        return String.format(
                 "Query\t%s\t%s\t%s\t%f",
                 onlineActionID,
                 predicate.getName(),
@@ -66,7 +64,10 @@ public class QueryAtomResponse extends OnlineResponse {
                 atomValue);
     }
 
-    private void parse(String[] parts) {
+    @Override
+    public void parse(String string) {
+        String[] parts = string.split("\t");
+
         assert(parts[0].equalsIgnoreCase("query"));
 
         onlineActionID = UUID.fromString(parts[1].trim());

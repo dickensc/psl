@@ -26,14 +26,14 @@ public class Stop extends OnlineAction {
     }
 
     @Override
-    public void setMessage(String newMessage) {
-        parse(newMessage.split("\t"));
-
-        message = "STOP";
+    public String toString() {
+        return "STOP";
     }
 
     @Override
-    protected void parse(String[] parts) {
+    public void parse(String string) {
+        String[] parts = string.split("\t");
+
         assert(parts[0].equalsIgnoreCase("stop"));
     }
 }

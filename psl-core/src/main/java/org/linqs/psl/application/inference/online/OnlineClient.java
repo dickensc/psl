@@ -17,14 +17,13 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.linqs.psl.application.inference.online.messages.OnlineMessage;
+import org.linqs.psl.application.inference.online.messages.OnlinePacket;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineActionException;
 import org.linqs.psl.application.inference.online.messages.responses.ModelInformation;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
 
-import org.linqs.psl.model.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,8 +68,8 @@ public class OnlineClient {
             // Get model information from server.
             ModelInformation modelInformation = null;
             try {
-                modelInformation = (ModelInformation)OnlineResponse.getResponse(
-                        OnlineMessage.getOnlineMessage(socketInputStream.readObject().toString()).getMessage());
+                OnlinePacket packet = OnlinePacket.getOnlinePacket(socketInputStream.readObject().toString());
+                modelInformation = (ModelInformation)OnlineResponse.getResponse(packet.getIdentifier(), packet.getMessage());
             } catch (IOException | ClassNotFoundException ex) {
                 throw new RuntimeException(ex);
             }
@@ -96,8 +95,8 @@ public class OnlineClient {
                     exit = (userInput.equalsIgnoreCase(EXIT_STRING));
 
                     OnlineAction onlineAction = OnlineAction.getAction(userInput);
-                    log.trace("Sending action: " + onlineAction);
-                    socketOutputStream.writeObject(onlineAction.toString());
+                    OnlinePacket onlinePacket = new OnlinePacket(onlineAction.getIdentifier(), onlineAction.toString());
+                    socketOutputStream.writeObject(onlinePacket.toString());
                 } catch (OnlineActionException ex) {
                     log.error(String.format("Error parsing command: [%s].", userInput));
                     log.error(ex.getMessage());
@@ -118,7 +117,7 @@ public class OnlineClient {
     }
 
     /**
-     * Private class for reading OnlineResponse objects sent from server.
+     * Private class for reading OnlineResponse objects from server.
      */
     private static class ServerConnectionThread extends Thread {
         private ObjectInputStream inputStream;
@@ -135,11 +134,11 @@ public class OnlineClient {
 
         @Override
         public void run() {
-            OnlineMessage serverMessage = null;
+            OnlinePacket packet = null;
 
             while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    serverMessage = OnlineMessage.getOnlineMessage(inputStream.readObject().toString());
+                    packet = OnlinePacket.getOnlinePacket(inputStream.readObject().toString());
                 } catch (EOFException ex) {
                     // Done.
                     break;
@@ -147,7 +146,7 @@ public class OnlineClient {
                     throw new RuntimeException(ex);
                 }
 
-                serverResponses.add(OnlineResponse.getResponse(serverMessage.getMessage()));
+                serverResponses.add(OnlineResponse.getResponse(packet.getIdentifier(), packet.getMessage()));
             }
         }
     }

@@ -49,10 +49,8 @@ public class ObserveAtom extends OnlineAction {
     }
 
     @Override
-    public void setMessage(String newMessage) {
-        parse(newMessage.split("\t"));
-
-        message = String.format(
+    public String toString() {
+        return String.format(
                 "OBSERVE\t%s\t%s\t%f",
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""),
@@ -60,7 +58,9 @@ public class ObserveAtom extends OnlineAction {
     }
 
     @Override
-    protected void parse(String[] parts) {
+    public void parse(String string) {
+        String[] parts = string.split("\t");
+
         assert(parts[0].equalsIgnoreCase("observe"));
 
         if (parts.length < 3) {
