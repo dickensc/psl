@@ -18,15 +18,8 @@
 package org.linqs.psl.application.inference.online.messages.actions.controls;
 
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.util.StringUtils;
-
-import java.util.UUID;
 
 public class Exit extends OnlineAction {
-    public Exit(UUID identifier, String clientCommand) {
-        super(identifier, clientCommand);
-    }
-
     public Exit() {
         super();
     }
@@ -34,12 +27,5 @@ public class Exit extends OnlineAction {
     @Override
     public String toString() {
         return "EXIT";
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("exit"));
     }
 }

@@ -30,16 +30,10 @@ public class QueryAtomResponse extends OnlineResponse {
     private Constant[] arguments;
 
     public QueryAtomResponse(QueryAtom onlineAction, double atomValue) {
-        super(UUID.randomUUID(), String.format(
-                "Query\t%s\t%s\t%s\t%f",
-                onlineAction.getIdentifier(),
-                onlineAction.getPredicate().getName(),
-                StringUtils.join("\t", onlineAction.getArguments()).replace("'", ""),
-                atomValue));
-    }
-
-    public QueryAtomResponse(UUID identifier, String serverResponse) {
-        super(identifier, serverResponse);
+        super(UUID.randomUUID());
+        this.atomValue = atomValue;
+        this.predicate = onlineAction.getPredicate();
+        this.arguments = onlineAction.getArguments();
     }
 
     public double getAtomValue() {
@@ -62,19 +56,5 @@ public class QueryAtomResponse extends OnlineResponse {
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""),
                 atomValue);
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("query"));
-
-        onlineActionID = UUID.fromString(parts[1].trim());
-
-        AtomInfo atomInfo = parseAtom(parts, 2);
-        predicate = atomInfo.predicate;
-        arguments = atomInfo.arguments;
-        atomValue = Double.parseDouble(parts[parts.length - 1].trim());
     }
 }

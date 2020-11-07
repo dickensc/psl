@@ -23,8 +23,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
-import java.util.UUID;
-
 /**
  * Add a new atom to the model.
  * String format: Observe <predicate> <args> ... [value]
@@ -33,10 +31,6 @@ public class ObserveAtom extends OnlineAction {
     private StandardPredicate predicate;
     private Constant[] arguments;
     private float value;
-
-    public ObserveAtom(UUID identifier, String clientCommand) {
-        super(identifier, clientCommand);
-    }
 
     public ObserveAtom(Atom atom, float value) {
         super();
@@ -64,21 +58,5 @@ public class ObserveAtom extends OnlineAction {
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""),
                 value);
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("observe"));
-
-        if (parts.length < 3) {
-            throw new IllegalArgumentException("Not enough arguments.");
-        }
-
-        AtomInfo atomInfo = parseAtom(parts, 1);
-        predicate = atomInfo.predicate;
-        arguments = atomInfo.arguments;
-        value = atomInfo.value;
     }
 }

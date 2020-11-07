@@ -17,15 +17,16 @@
  */
 package org.linqs.psl.application.inference.online.messages;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class OnlinePacket {
+public class OnlinePacket implements Serializable {
     private UUID identifier;
-    protected String message;
+    private OnlineMessage message;
 
-    public OnlinePacket(UUID identifier, String message) {
+    public OnlinePacket(UUID identifier, OnlineMessage message) {
         this.identifier = identifier;
-        setMessage(message);
+        this.message = message;
     }
 
     @Override
@@ -36,19 +37,15 @@ public class OnlinePacket {
                 message);
     }
 
-    public static OnlinePacket getOnlinePacket(String string) {
-        String[] parts = string.split("\t", 2);
-        UUID identifier = UUID.fromString(parts[0].trim());
-        String message = parts[1];
+//    public static OnlinePacket getOnlinePacket(String string) {
+//        String[] parts = string.split("\t", 2);
+//        UUID identifier = UUID.fromString(parts[0].trim());
+//        String message = parts[1];
+//
+//        return new OnlinePacket(identifier, message);
+//    }
 
-        return new OnlinePacket(identifier, message);
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getMessage() {
+    public OnlineMessage getMessage() {
         return message;
     }
 

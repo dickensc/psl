@@ -19,12 +19,9 @@ package org.linqs.psl.application.inference.online.messages.actions.model.update
 
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
-
-import java.util.UUID;
 
 /**
  * Add a new atom to the model.
@@ -36,14 +33,10 @@ public class AddAtom extends OnlineAction {
     private Constant[] arguments;
     private float value;
 
-    public AddAtom(UUID identifier, String clientCommand) {
-        super(identifier, clientCommand);
-    }
-
     public AddAtom(String partition, Atom atom, float value) {
         super();
-        this.predicate = (StandardPredicate) atom.getPredicate();
-        this.arguments = (Constant[]) atom.getArguments();
+        this.predicate = (StandardPredicate)atom.getPredicate();
+        this.arguments = (Constant[])atom.getArguments();
         this.partition = partition.toUpperCase();
         this.value = value;
     }
@@ -72,26 +65,5 @@ public class AddAtom extends OnlineAction {
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""),
                 value);
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("add"));
-
-        if (parts.length < 4) {
-            throw new IllegalArgumentException("Not enough arguments.");
-        }
-
-        partition = parts[1].toUpperCase();
-        if (!(partition.equals("READ") || partition.equals("WRITE"))) {
-            throw new IllegalArgumentException("Expecting 'READ' or 'WRITE' for partition, got '" + parts[1] + "'.");
-        }
-
-        OnlineAction.AtomInfo atomInfo = parseAtom(parts, 2);
-        predicate = atomInfo.predicate;
-        arguments = atomInfo.arguments;
-        value = atomInfo.value;
     }
 }

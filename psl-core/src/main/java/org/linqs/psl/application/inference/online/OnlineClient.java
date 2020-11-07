@@ -19,8 +19,8 @@ package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.online.messages.OnlinePacket;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.application.inference.online.messages.actions.OnlineActionException;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
+import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
 import org.linqs.psl.application.inference.online.messages.responses.ModelInformation;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
@@ -67,8 +67,8 @@ public class OnlineClient implements Runnable {
             // Get model information from server.
             ModelInformation modelInformation = null;
             try {
-                OnlinePacket packet = OnlinePacket.getOnlinePacket(socketInputStream.readObject().toString());
-                modelInformation = (ModelInformation)OnlineResponse.getResponse(packet.getIdentifier(), packet.getMessage());
+                OnlinePacket packet = (OnlinePacket)socketInputStream.readObject();
+                modelInformation = (ModelInformation)packet.getMessage();
             } catch (IOException | ClassNotFoundException ex) {
                 throw new RuntimeException(ex);
             }
@@ -78,7 +78,7 @@ public class OnlineClient implements Runnable {
             serverConnectionThread.start();
 
             // Read and parse userInput to send actions to server.
-            while (!(onlineAction instanceof Exit)) {
+            while (!(onlineAction instanceof Exit || onlineAction instanceof Stop)) {
                 try {
                     // Dequeue next action.
                     try {
@@ -88,9 +88,9 @@ public class OnlineClient implements Runnable {
                         continue;
                     }
 
-                    OnlinePacket onlinePacket = new OnlinePacket(onlineAction.getIdentifier(), onlineAction.toString());
+                    OnlinePacket onlinePacket = new OnlinePacket(onlineAction.getIdentifier(), onlineAction);
 //                    log.trace("Sending action: " + onlineAction);
-                    socketOutputStream.writeObject(onlinePacket.toString());
+                    socketOutputStream.writeObject(onlinePacket);
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -127,7 +127,7 @@ public class OnlineClient implements Runnable {
 
             while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    packet = OnlinePacket.getOnlinePacket(inputStream.readObject().toString());
+                    packet = (OnlinePacket)inputStream.readObject();
                 } catch (EOFException ex) {
                     // Done.
                     break;
@@ -135,7 +135,7 @@ public class OnlineClient implements Runnable {
                     throw new RuntimeException(ex);
                 }
 
-                serverResponses.add(OnlineResponse.getResponse(packet.getIdentifier(), packet.getMessage()));
+                serverResponses.add((OnlineResponse)packet.getMessage());
             }
         }
     }

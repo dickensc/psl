@@ -24,29 +24,8 @@ import java.util.UUID;
 public abstract class OnlineResponse extends OnlineMessage {
     protected UUID onlineActionID;
 
-    public OnlineResponse(UUID identifier, String serverResponse) {
-        super(identifier, serverResponse);
-    }
-
-    /**
-     * Construct an OnlineResponse given the name and necessary information.
-     */
-    public static OnlineResponse getResponse(String serverResponse) {
-        return getResponse(UUID.randomUUID(), serverResponse);
-    }
-
-    public static OnlineResponse getResponse(UUID identifier, String serverResponse) {
-        String responseClass = serverResponse.split("\t")[0].trim();
-
-        if (responseClass.equalsIgnoreCase("ModelInfo")) {
-            return new ModelInformation(identifier, serverResponse);
-        } else if (responseClass.equalsIgnoreCase("ActionStatus")) {
-            return new ActionStatus(identifier, serverResponse);
-        } else if (responseClass.equalsIgnoreCase("Query")) {
-            return new QueryAtomResponse(identifier, serverResponse);
-        } else {
-            throw new IllegalArgumentException("Unknown online response: '" + responseClass + "'.");
-        }
+    public OnlineResponse(UUID identifier) {
+        super(identifier);
     }
 
     public UUID getOnlineActionID() {

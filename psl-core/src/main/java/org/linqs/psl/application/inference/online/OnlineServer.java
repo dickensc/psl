@@ -99,10 +99,10 @@ public class OnlineServer implements Closeable {
     public void onActionExecution(OnlineAction action, OnlineResponse onlineResponse) {
         ClientConnectionThread clientConnectionThread = messageIDConnectionMap.get(action.getIdentifier());
         ObjectOutputStream outputStream = clientConnectionThread.outputStream;
-        OnlinePacket onlinePacket = new OnlinePacket(onlineResponse.getIdentifier(), onlineResponse.toString());
+        OnlinePacket onlinePacket = new OnlinePacket(onlineResponse.getIdentifier(), onlineResponse);
 
         try {
-            outputStream.writeObject(onlinePacket.toString());
+            outputStream.writeObject(onlinePacket);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -241,8 +241,8 @@ public class OnlineServer implements Closeable {
 
             try {
                 ModelInformation modelInformation = new ModelInformation(standardPredicates.toArray(new StandardPredicate[]{}));
-                OnlinePacket onlinePacket = new OnlinePacket(modelInformation.getIdentifier(), modelInformation.toString());
-                outputStream.writeObject(onlinePacket.toString());
+                OnlinePacket onlinePacket = new OnlinePacket(modelInformation.getIdentifier(), modelInformation);
+                outputStream.writeObject(onlinePacket);
             } catch (IOException ex) {
                 close();
                 throw new RuntimeException(ex);
@@ -255,8 +255,8 @@ public class OnlineServer implements Closeable {
             OnlineAction newAction = null;
             while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    packet = OnlinePacket.getOnlinePacket(inputStream.readObject().toString());
-                    newAction = OnlineAction.getAction(packet.getIdentifier(), packet.getMessage());
+                    packet = (OnlinePacket)inputStream.readObject();
+                    newAction = (OnlineAction)packet.getMessage();
 //                    log.trace("Received action: " + newAction);
                 } catch (IOException | ClassNotFoundException ex) {
                     throw new RuntimeException(ex);

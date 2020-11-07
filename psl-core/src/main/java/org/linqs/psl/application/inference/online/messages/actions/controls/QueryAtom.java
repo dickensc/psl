@@ -23,8 +23,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
-import java.util.UUID;
-
 /**
  * Query an existing observation from the model.
  * String format: Query <predicate> <args> ...
@@ -32,10 +30,6 @@ import java.util.UUID;
 public class QueryAtom extends OnlineAction {
     private StandardPredicate predicate;
     private Constant[] arguments;
-
-    public QueryAtom(UUID actionID, String clientCommand) {
-        super(actionID, clientCommand);
-    }
 
     public QueryAtom(Atom atom) {
         super();
@@ -57,20 +51,5 @@ public class QueryAtom extends OnlineAction {
                 "Query\t%s\t%s",
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""));
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("query"));
-
-        if (parts.length < 2) {
-            throw new IllegalArgumentException("Not enough arguments.");
-        }
-
-        AtomInfo atomInfo = parseAtom(parts, 1);
-        predicate = atomInfo.predicate;
-        arguments = atomInfo.arguments;
     }
 }

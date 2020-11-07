@@ -19,13 +19,7 @@ package org.linqs.psl.application.inference.online.messages.actions.controls;
 
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 
-import java.util.UUID;
-
 public class Sync extends OnlineAction {
-    public Sync(UUID actionID, String clientCommand) {
-        super(actionID, clientCommand);
-    }
-
     public Sync() {
         super();
     }
@@ -33,12 +27,5 @@ public class Sync extends OnlineAction {
     @Override
     public String toString() {
         return "SYNC";
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("sync"));
     }
 }

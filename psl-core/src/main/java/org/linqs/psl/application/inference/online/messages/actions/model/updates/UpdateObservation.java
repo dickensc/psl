@@ -23,8 +23,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
-import java.util.UUID;
-
 /**
  * Update an existing observation from the model.
  * String format: UPDATE <predicate> <args> ... [value]
@@ -33,10 +31,6 @@ public class UpdateObservation extends OnlineAction {
     private StandardPredicate predicate;
     private Constant[] arguments;
     private float value;
-
-    public UpdateObservation(UUID actionID, String clientCommand) {
-        super(actionID, clientCommand);
-    }
 
     public UpdateObservation(Atom atom, float value) {
         super();
@@ -63,21 +57,5 @@ public class UpdateObservation extends OnlineAction {
                 "UPDATE\t%s\t%s\t%f",
                 predicate.getName(), StringUtils.join("\t", arguments).replace("'", ""),
                 value);
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("update"));
-
-        if (parts.length < 3) {
-            throw new IllegalArgumentException("Not enough arguments.");
-        }
-
-        OnlineAction.AtomInfo atomInfo = parseAtom(parts, 1);
-        predicate = atomInfo.predicate;
-        arguments = atomInfo.arguments;
-        value = atomInfo.value;
     }
 }

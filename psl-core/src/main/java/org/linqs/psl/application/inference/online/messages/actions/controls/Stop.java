@@ -22,11 +22,6 @@ import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import java.util.UUID;
 
 public class Stop extends OnlineAction {
-
-    public Stop(UUID actionID, String clientCommand) {
-        super(actionID, clientCommand);
-    }
-
     public Stop() {
         super();
     }
@@ -34,12 +29,5 @@ public class Stop extends OnlineAction {
     @Override
     public String toString() {
         return "STOP";
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("stop"));
     }
 }

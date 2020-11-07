@@ -18,61 +18,21 @@
 package org.linqs.psl.application.inference.online.messages.actions;
 
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
-import org.linqs.psl.application.inference.online.messages.actions.controls.*;
-import org.linqs.psl.application.inference.online.messages.actions.model.updates.AddAtom;
-import org.linqs.psl.application.inference.online.messages.actions.model.updates.DeleteAtom;
-import org.linqs.psl.application.inference.online.messages.actions.model.updates.ObserveAtom;
-import org.linqs.psl.application.inference.online.messages.actions.model.updates.UpdateObservation;
-import org.linqs.psl.application.inference.online.messages.actions.template.modifications.AddRule;
 
 import java.util.UUID;
 
+//TODO(Charles): AddPredicate action.
 /**
  * Base class for online actions.
  * All actions should be able to freely convert to and from strings.
  */
 public abstract class OnlineAction extends OnlineMessage {
 
-    public OnlineAction(UUID identifier, String clientCommand) {
-        super(identifier, clientCommand);
+    public OnlineAction(UUID identifier) {
+        super(identifier);
     }
 
     public OnlineAction() {
         super();
-    }
-
-    /**
-     * Construct an OnlineAction given the name and necessary information.
-     */
-    public static OnlineAction getAction(String clientCommand) {
-        return getAction(UUID.randomUUID(), clientCommand);
-    }
-
-    public static OnlineAction getAction(UUID actionID, String clientCommand) {
-        String actionClass = clientCommand.split("\t")[0].trim();
-
-        if (actionClass.equalsIgnoreCase("Add")) {
-            return new AddAtom(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("AddRule")) {
-            return new AddRule(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("Observe")) {
-            return new ObserveAtom(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("Stop")) {
-            return new Stop(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("Sync")) {
-            return new Sync(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("Exit")) {
-            return new Exit(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("Delete")) {
-            return new DeleteAtom(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("Update")) {
-            return new UpdateObservation(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("Query")) {
-            return new QueryAtom(actionID, clientCommand);
-        } else if (actionClass.equalsIgnoreCase("Write")) {
-            return new WriteInferredPredicates(actionID, clientCommand);
-        } else {
-            throw new IllegalArgumentException("Unknown online action: '" + actionClass + "'.");
-        }
     }
 }

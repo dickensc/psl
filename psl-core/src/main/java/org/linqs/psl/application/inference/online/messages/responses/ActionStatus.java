@@ -26,15 +26,10 @@ public class ActionStatus extends OnlineResponse {
     private String statusMessage;
 
     public ActionStatus(OnlineAction onlineAction, boolean success, String statusMessage) {
-        super(UUID.randomUUID(), String.format(
-                "ActionStatus\t%s\t%s\t%s",
-                onlineAction.getIdentifier(),
-                Boolean.toString(success),
-                statusMessage));
-    }
-
-    public ActionStatus(UUID identifier, String serverResponse) {
-        super(identifier, serverResponse);
+        super(UUID.randomUUID());
+        this.onlineActionID = onlineAction.getIdentifier();
+        this.success = success;
+        this.statusMessage = statusMessage;
     }
 
     @Override
@@ -44,16 +39,5 @@ public class ActionStatus extends OnlineResponse {
                 onlineActionID,
                 Boolean.toString(success),
                 statusMessage);
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("ActionStatus"));
-
-        onlineActionID = UUID.fromString(parts[1].trim());
-        success = Boolean.parseBoolean(parts[2].trim());
-        statusMessage = parts[3].trim();
     }
 }

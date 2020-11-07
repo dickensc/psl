@@ -30,15 +30,13 @@ public class ModelInformation extends OnlineResponse {
     public Map<String, StandardPredicate> predicates;
 
     public ModelInformation(StandardPredicate[] predicates) {
-        super(UUID.randomUUID(), String.format(
-                "ModelInfo\t%s",
-                StringUtils.join("\t", predicates)));
-    }
+        super(UUID.randomUUID());
+        this.predicates = new HashMap<String, StandardPredicate>();
 
-    public ModelInformation(UUID identifier, String serverResponse) {
-        super(identifier, serverResponse);
+        for (int i = 1; i < predicates.length; i++) {
+            this.predicates.put(predicates[i].getName(), StandardPredicate.get(predicates[i].getName()));
+        }
     }
-
 
     public Collection<StandardPredicate> getPredicates() {
         return predicates.values();
@@ -49,30 +47,5 @@ public class ModelInformation extends OnlineResponse {
         return String.format(
                 "ModelInfo\t%s",
                 StringUtils.join("\t", predicates.values().toArray(new StandardPredicate[]{})));
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("ModelInfo"));
-
-        String predicateName = null;
-        String[] typeStrings = null;
-        ConstantType[] types = null;
-        predicates = new HashMap<String, StandardPredicate>();
-
-        for (int i = 1; i < parts.length; i++) {
-            predicateName = parts[i].split("\\(")[0];
-            typeStrings = parts[i].split("\\(")[1].split(",");
-            types = new ConstantType[typeStrings.length];
-
-            for (int j = 0; j < typeStrings.length; j++) {
-                types[j] = ConstantType.valueOf(typeStrings[j].replace(")", "").trim());
-            }
-
-            predicates.put(predicateName, StandardPredicate.get(predicateName, types));
-        }
-
     }
 }

@@ -18,9 +18,6 @@
 package org.linqs.psl.application.inference.online.messages.actions.controls;
 
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.util.StringUtils;
-
-import java.util.UUID;
 
 /**
  * Write out targets on the server side.
@@ -28,10 +25,6 @@ import java.util.UUID;
  */
 public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
-
-    public WriteInferredPredicates(UUID actionID, String clientCommand) {
-        super(actionID, clientCommand);
-    }
 
     public WriteInferredPredicates(String outputDirectoryPath) {
         super();
@@ -48,22 +41,6 @@ public class WriteInferredPredicates extends OnlineAction {
             return String.format("WRITE");
         } else {
             return String.format("WRITE\t%s", outputDirectoryPath);
-        }
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t");
-
-        assert(parts[0].equalsIgnoreCase("write"));
-
-        if (parts.length > 2) {
-            throw new IllegalArgumentException("Too many arguments.");
-        }
-
-        outputDirectoryPath = null;
-        if (parts.length == 2) {
-            outputDirectoryPath = parts[1];
         }
     }
 }

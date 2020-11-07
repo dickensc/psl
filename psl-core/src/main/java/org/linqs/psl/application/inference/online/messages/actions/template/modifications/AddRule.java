@@ -27,30 +27,21 @@ import java.util.UUID;
  * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
  */
 public class AddRule extends OnlineAction {
-    private Rule rule;
+//    private Rule rule;
 
     public AddRule(UUID identifier, String clientCommand) {
-        super(identifier, clientCommand);
+        super(identifier);
     }
 
     public AddRule(Rule rule) {
         super();
-        this.rule = rule;
+//        this.rule = rule;
     }
 
-    @Override
-    public String toString() {
-        return String.format(
-                "ADDRULE\t%s",
-                rule.toString());
-    }
-
-    @Override
-    public void parse(String string) {
-        String[] parts = string.split("\t", 2);
-
-        assert(parts[0].equalsIgnoreCase("AddRule"));
-
-//        ModelLoader.loadRule(string);
-    }
+//    @Override
+//    public String toString() {
+//        return String.format(
+//                "ADDRULE\t%s",
+//                rule.toString());
+//    }
 }
