@@ -18,9 +18,12 @@
 package org.linqs.psl.application.inference.online.messages.actions;
 
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.application.inference.online.messages.actions.controls.*;
+import org.linqs.psl.application.inference.online.messages.actions.model.updates.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.updates.DeleteAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.updates.ObserveAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.updates.UpdateObservation;
+import org.linqs.psl.application.inference.online.messages.actions.template.modifications.AddRule;
 
 import java.util.UUID;
 
@@ -34,6 +37,10 @@ public abstract class OnlineAction extends OnlineMessage {
         super(identifier, clientCommand);
     }
 
+    public OnlineAction() {
+        super();
+    }
+
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
@@ -44,8 +51,10 @@ public abstract class OnlineAction extends OnlineMessage {
     public static OnlineAction getAction(UUID actionID, String clientCommand) {
         String actionClass = clientCommand.split("\t")[0].trim();
 
-        if (actionClass.equalsIgnoreCase("add")) {
+        if (actionClass.equalsIgnoreCase("Add")) {
             return new AddAtom(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("AddRule")) {
+            return new AddRule(actionID, clientCommand);
         } else if (actionClass.equalsIgnoreCase("Observe")) {
             return new ObserveAtom(actionID, clientCommand);
         } else if (actionClass.equalsIgnoreCase("Stop")) {

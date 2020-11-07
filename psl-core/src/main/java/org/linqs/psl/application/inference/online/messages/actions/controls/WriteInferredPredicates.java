@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions;
+package org.linqs.psl.application.inference.online.messages.actions.controls;
 
+import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.util.StringUtils;
 
 import java.util.UUID;
@@ -30,6 +31,11 @@ public class WriteInferredPredicates extends OnlineAction {
 
     public WriteInferredPredicates(UUID actionID, String clientCommand) {
         super(actionID, clientCommand);
+    }
+
+    public WriteInferredPredicates(String outputDirectoryPath) {
+        super();
+        this.outputDirectoryPath = outputDirectoryPath;
     }
 
     public String getOutputDirectoryPath() {

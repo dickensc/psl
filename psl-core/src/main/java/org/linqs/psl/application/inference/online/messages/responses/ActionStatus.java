@@ -18,7 +18,6 @@
 package org.linqs.psl.application.inference.online.messages.responses;
 
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.application.inference.online.messages.actions.QueryAtom;
 
 import java.util.UUID;
 

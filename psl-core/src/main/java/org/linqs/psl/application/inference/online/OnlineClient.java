@@ -20,6 +20,7 @@ package org.linqs.psl.application.inference.online;
 import org.linqs.psl.application.inference.online.messages.OnlinePacket;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineActionException;
+import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.responses.ModelInformation;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
@@ -27,43 +28,41 @@ import org.linqs.psl.config.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.EOFException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * A client that takes input on stdin and passes it to the online host specified in configuration.
  */
-public class OnlineClient {
-    private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
+public class OnlineClient implements Runnable {
+    private Logger log = LoggerFactory.getLogger(OnlineClient.class);
 
-    public static final String EXIT_STRING = "exit";
+    private PrintStream out;
+    private List<OnlineResponse> serverResponses;
+    private BlockingQueue<OnlineAction> actionQueue;
+    private String hostname;
+    private int port;
 
-    // Static only.
-    private OnlineClient() {}
-
-    public static List<OnlineResponse> run(InputStream in, PrintStream out) {
-        return run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt(), in, out);
+    public OnlineClient(PrintStream out, BlockingQueue<OnlineAction> actionQueue, List<OnlineResponse> serverResponses) {
+        this.out = out;
+        this.serverResponses = serverResponses;
+        this.actionQueue = actionQueue;
+        this.hostname = Options.ONLINE_HOST.getString();
+        this.port = Options.ONLINE_PORT_NUMBER.getInt();
     }
 
-    public static List<OnlineResponse> run(String hostname, int port, InputStream in, PrintStream out) {
-        List<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
-
+    public void run() {
         try (
                 Socket server = new Socket(hostname, port);
                 ObjectOutputStream socketOutputStream = new ObjectOutputStream(server.getOutputStream());
-                ObjectInputStream socketInputStream = new ObjectInputStream(server.getInputStream());
-                BufferedReader commandReader = new BufferedReader(new InputStreamReader(in))) {
-            boolean exit = false;
-            String userInput = null;
+                ObjectInputStream socketInputStream = new ObjectInputStream(server.getInputStream())) {
+            OnlineAction onlineAction = null;
 
             // Get model information from server.
             ModelInformation modelInformation = null;
@@ -79,27 +78,19 @@ public class OnlineClient {
             serverConnectionThread.start();
 
             // Read and parse userInput to send actions to server.
-            while (!exit) {
+            while (!(onlineAction instanceof Exit)) {
                 try {
-                    // Read next command.
-                    userInput = commandReader.readLine();
-                    if (userInput == null) {
-                        break;
-                    }
-
-                    // Parse command.
-                    userInput = userInput.trim();
-                    if (userInput.equals("")) {
+                    // Dequeue next action.
+                    try {
+                        onlineAction = actionQueue.take();
+                    } catch (InterruptedException ex) {
+                        log.warn("Interrupted while taking an online action from the queue.", ex);
                         continue;
                     }
-                    exit = (userInput.equalsIgnoreCase(EXIT_STRING));
 
-                    OnlineAction onlineAction = OnlineAction.getAction(userInput);
                     OnlinePacket onlinePacket = new OnlinePacket(onlineAction.getIdentifier(), onlineAction.toString());
+//                    log.trace("Sending action: " + onlineAction);
                     socketOutputStream.writeObject(onlinePacket.toString());
-                } catch (OnlineActionException ex) {
-                    log.error(String.format("Error parsing command: [%s].", userInput));
-                    log.error(ex.getMessage());
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -112,8 +103,6 @@ public class OnlineClient {
         } catch (InterruptedException ex) {
             log.error("Client session interrupted");
         }
-
-        return serverResponses;
     }
 
     /**
