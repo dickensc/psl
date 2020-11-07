@@ -32,10 +32,10 @@ public class ObserveAtom extends OnlineAction {
     private Constant[] arguments;
     private float value;
 
-    public ObserveAtom(Atom atom, float value) {
+    public ObserveAtom(StandardPredicate predicate, Constant[] arguments, float value) {
         super();
-        this.predicate = (StandardPredicate) atom.getPredicate();
-        this.arguments = (Constant[]) atom.getArguments();
+        this.predicate = predicate;
+        this.arguments = arguments;
         this.value = value;
     }
 
@@ -54,7 +54,7 @@ public class ObserveAtom extends OnlineAction {
     @Override
     public String toString() {
         return String.format(
-                "OBSERVE\t%s\t%s\t%f",
+                "OBSERVE\t%s\t%s\t%.2f",
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""),
                 value);

@@ -31,10 +31,10 @@ public class QueryAtom extends OnlineAction {
     private StandardPredicate predicate;
     private Constant[] arguments;
 
-    public QueryAtom(Atom atom) {
+    public QueryAtom(StandardPredicate predicate, Constant[] arguments) {
         super();
-        this.predicate = (StandardPredicate) atom.getPredicate();
-        this.arguments = (Constant[]) atom.getArguments();
+        this.predicate = predicate;
+        this.arguments = arguments;
     }
 
     public StandardPredicate getPredicate() {

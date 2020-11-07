@@ -37,14 +37,6 @@ public class OnlinePacket implements Serializable {
                 message);
     }
 
-//    public static OnlinePacket getOnlinePacket(String string) {
-//        String[] parts = string.split("\t", 2);
-//        UUID identifier = UUID.fromString(parts[0].trim());
-//        String message = parts[1];
-//
-//        return new OnlinePacket(identifier, message);
-//    }
-
     public OnlineMessage getMessage() {
         return message;
     }

@@ -42,16 +42,15 @@ action
     ;
 
 addAtom
-    :   ADD_ATOM ' ' READ_PARTITION ' ' atom number
-    |   ADD_ATOM ' ' WRITE_PARTITION ' ' atom
+    :   ADD_ATOM PARTITION atom number?
     ;
 
 addRule
-    :   ADD_RULE ' ' pslRule
+    :   ADD_RULE pslRule
     ;
 
 deleteAtom
-    :   DELETE_ATOM ' ' PARTITION ' ' atom
+    :   DELETE_ATOM PARTITION atom
     ;
 
 exit
@@ -59,11 +58,11 @@ exit
     ;
 
 observeAtom
-    :   OBSERVE_ATOM ' ' atom ' ' number
+    :   OBSERVE_ATOM atom number
     ;
 
 queryAtom
-    :   QUERY_ATOM ' ' atom
+    :   QUERY_ATOM atom
     ;
 
 stop
@@ -75,11 +74,11 @@ sync
     ;
 
 updateObservation
-    :   UPDATE_OBSERVATION ' ' atom ' ' number
+    :   UPDATE_OBSERVATION atom number
     ;
 
 writeInferredPredicates
-    :   WRITE_INFERRED_PREDICATES ' ' STRING_LITERAL
+    :   WRITE_INFERRED_PREDICATES STRING_LITERAL
     ;
 
 /*
@@ -132,7 +131,7 @@ UPDATE_OBSERVATION
     ;
 
 WRITE_INFERRED_PREDICATES
-    :   W R I T E
+    :   W R I T E I N F E R R E D P R E D I C A T E S
     ;
 
 WRITE_PARTITION

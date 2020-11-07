@@ -32,10 +32,10 @@ public class DeleteAtom extends OnlineAction {
     private String partition;
     private Constant[] arguments;
 
-    public DeleteAtom(String partition, Atom atom) {
+    public DeleteAtom(String partition, StandardPredicate predicate, Constant[] arguments) {
         super();
-        this.predicate = (StandardPredicate) atom.getPredicate();
-        this.arguments = (Constant[]) atom.getArguments();
+        this.predicate = predicate;
+        this.arguments = arguments;
         this.partition = partition.toUpperCase();
     }
 

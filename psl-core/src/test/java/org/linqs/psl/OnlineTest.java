@@ -148,9 +148,9 @@ public class OnlineTest {
         AtomInfo atomInfo = parseAtom(parts, 2);
 
         if (partition.equals("READ")) {
-            return new AddAtom(partition, new ObservedAtom(atomInfo.predicate, atomInfo.arguments, atomInfo.value), atomInfo.value);
+            return new AddAtom(partition, atomInfo.predicate, atomInfo.arguments, atomInfo.value);
         } else {
-            return new AddAtom(partition, new RandomVariableAtom(atomInfo.predicate, atomInfo.arguments, atomInfo.value), atomInfo.value);
+            return new AddAtom(partition, atomInfo.predicate, atomInfo.arguments, atomInfo.value);
         }
     }
 
@@ -177,9 +177,9 @@ public class OnlineTest {
         }
 
         if (partition.equals("READ")) {
-            return new DeleteAtom(partition, new ObservedAtom(atomInfo.predicate, atomInfo.arguments, atomInfo.value));
+            return new DeleteAtom(partition, atomInfo.predicate, atomInfo.arguments);
         } else {
-            return new DeleteAtom(partition, new RandomVariableAtom(atomInfo.predicate, atomInfo.arguments, atomInfo.value));
+            return new DeleteAtom(partition, atomInfo.predicate, atomInfo.arguments);
         }
     }
 
@@ -194,7 +194,7 @@ public class OnlineTest {
 
         AtomInfo atomInfo = parseAtom(parts, 1);
 
-        return new ObserveAtom(new RandomVariableAtom(atomInfo.predicate, atomInfo.arguments, atomInfo.value), atomInfo.value);
+        return new ObserveAtom(atomInfo.predicate, atomInfo.arguments, atomInfo.value);
     }
 
     private static UpdateObservation parseUpdateObservation(String string) {
@@ -208,7 +208,7 @@ public class OnlineTest {
 
         AtomInfo atomInfo = parseAtom(parts, 1);
 
-        return new UpdateObservation(new ObservedAtom(atomInfo.predicate, atomInfo.arguments, atomInfo.value), atomInfo.value);
+        return new UpdateObservation(atomInfo.predicate, atomInfo.arguments, atomInfo.value);
     }
 
     private static Exit parseExit(String string) {
@@ -230,7 +230,7 @@ public class OnlineTest {
 
         AtomInfo atomInfo = parseAtom(parts, 1);
 
-        return new QueryAtom(new ObservedAtom(atomInfo.predicate, atomInfo.arguments, 1.0f));
+        return new QueryAtom(atomInfo.predicate, atomInfo.arguments);
     }
 
     private static Stop parseStop(String string) {

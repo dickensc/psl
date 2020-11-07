@@ -19,6 +19,7 @@ package org.linqs.psl.parser;
 
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;

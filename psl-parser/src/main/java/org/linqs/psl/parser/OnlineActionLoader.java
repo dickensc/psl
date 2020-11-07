@@ -12,7 +12,9 @@ import org.linqs.psl.application.inference.online.messages.actions.model.updates
 import org.linqs.psl.application.inference.online.messages.actions.model.updates.UpdateObservation;
 import org.linqs.psl.application.inference.online.messages.actions.template.modifications.AddRule;
 import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.antlr.OnlinePSLBaseVisitor;
 import org.linqs.psl.parser.antlr.OnlinePSLLexer;
 import org.linqs.psl.parser.antlr.OnlinePSLParser;
@@ -125,7 +127,7 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
         LinkedList<OnlineAction> actions = new LinkedList<OnlineAction>();
         for (ActionContext actionCtx : ctx.action()) {
             try {
-                actions.push((OnlineAction) visit(actionCtx));
+                actions.push((OnlineAction)visit(actionCtx));
             } catch (RuntimeException ex) {
                 throw new RuntimeException("Failed to compile online action: [" + parser.getTokenStream().getText(actionCtx) + "]", ex);
             }
@@ -163,20 +165,17 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
     @Override
     public AddAtom visitAddAtom(AddAtomContext ctx) {
         Atom atom = ModelLoader.loadAtom(ctx.atom().getText());
-        String partition = null;
-        if (ctx.READ_PARTITION() != null) {
-            partition = ctx.READ_PARTITION().getText();
-        } else if (ctx.WRITE_PARTITION() != null) {
-            partition = ctx.WRITE_PARTITION().getText();
-        } else {
-            throw new IllegalStateException();
+        Constant[] constants = new Constant[atom.getArguments().length];
+        for (int i = 0; i < constants.length; i++) {
+            constants[i] = (Constant)atom.getArguments()[i];
         }
+        String partition = ctx.PARTITION().getText();
         float value = 1.0f;
         if (ctx.number() != null) {
             value = visitNumber(ctx.number());
         }
 
-        return new AddAtom(partition, atom, value);
+        return new AddAtom(partition, (StandardPredicate)atom.getPredicate(), constants, value);
     }
 
     @Override
@@ -194,32 +193,48 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
     @Override
     public DeleteAtom visitDeleteAtom(DeleteAtomContext ctx) {
         Atom atom = ModelLoader.loadAtom(ctx.atom().getText());
+        Constant[] constants = new Constant[atom.getArguments().length];
+        for (int i = 0; i < constants.length; i++) {
+            constants[i] = (Constant)atom.getArguments()[i];
+        }
         String partition = ctx.PARTITION().getText();
 
-        return new DeleteAtom(partition, atom);
+        return new DeleteAtom(partition, (StandardPredicate)atom.getPredicate(), constants);
     }
 
     @Override
     public ObserveAtom visitObserveAtom(ObserveAtomContext ctx) {
         Atom atom = ModelLoader.loadAtom(ctx.atom().getText());
+        Constant[] constants = new Constant[atom.getArguments().length];
+        for (int i = 0; i < constants.length; i++) {
+            constants[i] = (Constant)atom.getArguments()[i];
+        }
         float value = visitNumber(ctx.number());
 
-        return new ObserveAtom(atom, value);
+        return new ObserveAtom((StandardPredicate)atom.getPredicate(), constants, value);
     }
 
     @Override
     public UpdateObservation visitUpdateObservation(UpdateObservationContext ctx) {
         Atom atom = ModelLoader.loadAtom(ctx.atom().getText());
+        Constant[] constants = new Constant[atom.getArguments().length];
+        for (int i = 0; i < constants.length; i++) {
+            constants[i] = (Constant)atom.getArguments()[i];
+        }
         float value = visitNumber(ctx.number());
 
-        return new UpdateObservation(atom, value);
+        return new UpdateObservation((StandardPredicate)atom.getPredicate(), constants, value);
     }
 
     @Override
     public QueryAtom visitQueryAtom(QueryAtomContext ctx) {
         Atom atom = ModelLoader.loadAtom(ctx.atom().getText());
+        Constant[] constants = new Constant[atom.getArguments().length];
+        for (int i = 0; i < constants.length; i++) {
+            constants[i] = (Constant)atom.getArguments()[i];
+        }
 
-        return new QueryAtom(atom);
+        return new QueryAtom((StandardPredicate)atom.getPredicate(), constants);
     }
 
     @Override

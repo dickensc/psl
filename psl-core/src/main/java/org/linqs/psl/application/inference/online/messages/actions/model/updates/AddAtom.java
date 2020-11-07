@@ -33,10 +33,10 @@ public class AddAtom extends OnlineAction {
     private Constant[] arguments;
     private float value;
 
-    public AddAtom(String partition, Atom atom, float value) {
+    public AddAtom(String partition, StandardPredicate predicate, Constant[] arguments, float value) {
         super();
-        this.predicate = (StandardPredicate)atom.getPredicate();
-        this.arguments = (Constant[])atom.getArguments();
+        this.predicate = predicate;
+        this.arguments = arguments;
         this.partition = partition.toUpperCase();
         this.value = value;
     }
@@ -60,7 +60,7 @@ public class AddAtom extends OnlineAction {
     @Override
     public String toString() {
         return String.format(
-                "ADD\t%s\t%s\t%s\t%f",
+                "ADD\t%s\t%s\t%s\t%.2f",
                 partition,
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""),
