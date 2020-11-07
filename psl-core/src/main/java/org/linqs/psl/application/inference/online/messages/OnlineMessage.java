@@ -31,6 +31,10 @@ public abstract class OnlineMessage {
         parse(message);
     }
 
+    public OnlineMessage() {
+        this.identifier = UUID.randomUUID();
+    }
+
     /**
      * Parse the original client command.
      */

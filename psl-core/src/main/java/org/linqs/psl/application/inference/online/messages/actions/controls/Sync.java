@@ -15,13 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions;
+package org.linqs.psl.application.inference.online.messages.actions.controls;
+
+import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 
 import java.util.UUID;
 
 public class Sync extends OnlineAction {
     public Sync(UUID actionID, String clientCommand) {
         super(actionID, clientCommand);
+    }
+
+    public Sync() {
+        super();
     }
 
     @Override

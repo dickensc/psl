@@ -15,8 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions;
+package org.linqs.psl.application.inference.online.messages.actions.model.updates;
 
+import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
@@ -24,17 +26,23 @@ import org.linqs.psl.util.StringUtils;
 import java.util.UUID;
 
 /**
- * Add a new atom to the model.
- * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
+ * Delete an atom from the existing model.
+ * String format: UUID DELETE <READ/WRITE> <predicate> <args> ...
  */
-public class AddAtom extends OnlineAction {
+public class DeleteAtom extends OnlineAction {
     private StandardPredicate predicate;
     private String partition;
     private Constant[] arguments;
-    private float value;
 
-    public AddAtom(UUID identifier, String clientCommand) {
-        super(identifier, clientCommand);
+    public DeleteAtom(UUID actionID, String clientCommand) {
+        super(actionID, clientCommand);
+    }
+
+    public DeleteAtom(String partition, Atom atom) {
+        super();
+        this.predicate = (StandardPredicate) atom.getPredicate();
+        this.arguments = (Constant[]) atom.getArguments();
+        this.partition = partition.toUpperCase();
     }
 
     public StandardPredicate getPredicate() {
@@ -45,10 +53,6 @@ public class AddAtom extends OnlineAction {
         return partition;
     }
 
-    public float getValue() {
-        return value;
-    }
-
     public Constant[] getArguments() {
         return arguments;
     }
@@ -56,18 +60,16 @@ public class AddAtom extends OnlineAction {
     @Override
     public String toString() {
         return String.format(
-                "ADD\t%s\t%s\t%s\t%f",
-                partition,
-                predicate.getName(),
-                StringUtils.join("\t", arguments).replace("'", ""),
-                value);
+                "DELETE\t%s\t%s\t%s",
+                partition, predicate.getName(),
+                StringUtils.join("\t", arguments).replace("'", ""));
     }
 
     @Override
     public void parse(String string) {
         String[] parts = string.split("\t");
 
-        assert(parts[0].equalsIgnoreCase("add"));
+        assert(parts[0].equalsIgnoreCase("delete"));
 
         if (parts.length < 4) {
             throw new IllegalArgumentException("Not enough arguments.");
@@ -81,6 +83,9 @@ public class AddAtom extends OnlineAction {
         OnlineAction.AtomInfo atomInfo = parseAtom(parts, 2);
         predicate = atomInfo.predicate;
         arguments = atomInfo.arguments;
-        value = atomInfo.value;
+
+        if (parts.length == (3 + predicate.getArity() + 1)) {
+            throw new IllegalArgumentException("Values cannot be supplied to DELETE actions.");
+        }
     }
 }
