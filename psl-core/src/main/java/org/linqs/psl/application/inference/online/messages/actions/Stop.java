@@ -15,31 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.controls;
-
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.util.StringUtils;
+package org.linqs.psl.application.inference.online.messages.actions;
 
 import java.util.UUID;
 
-public class Exit extends OnlineAction {
-    public Exit(UUID identifier, String clientCommand) {
-        super(identifier, clientCommand);
-    }
+public class Stop extends OnlineAction {
 
-    public Exit() {
-        super();
+    public Stop(UUID actionID, String clientCommand) {
+        super(actionID, clientCommand);
     }
 
     @Override
     public String toString() {
-        return "EXIT";
+        return "STOP";
     }
 
     @Override
     public void parse(String string) {
         String[] parts = string.split("\t");
 
-        assert(parts[0].equalsIgnoreCase("exit"));
+        assert(parts[0].equalsIgnoreCase("stop"));
     }
 }

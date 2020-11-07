@@ -19,6 +19,7 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.OnlineClient;
+import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
@@ -315,13 +316,13 @@ public class Launcher {
         truthDatabase.close();
     }
 
-    private Model loadModel() {
+    private Model loadModel(DataStore dataStore) {
         log.info("Loading model from {}", parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
 
         Model model = null;
 
         try (FileReader reader = new FileReader(new File(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL)))) {
-            model = ModelLoader.load(reader);
+            model = ModelLoader.load(dataStore, reader);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to load model from file: " + parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL), ex);
         }
@@ -338,7 +339,7 @@ public class Launcher {
 
     private void runOnlineClient() {
         log.info("Starting OnlinePSL client.");
-        OnlineClientCLI.run(System.in, System.out);
+        OnlineClient.run(System.in, System.out);
         log.info("OnlinePSL client closed.");
     }
 
@@ -383,7 +384,7 @@ public class Launcher {
             closedPredicates = loadData(dataStore);
 
             // Load the model.
-            model = loadModel();
+            model = loadModel(dataStore);
 
             // Run PSL.
             runPSL(model, dataStore, closedPredicates);

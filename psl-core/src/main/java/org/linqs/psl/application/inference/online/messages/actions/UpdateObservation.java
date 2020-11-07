@@ -15,10 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.controls;
+package org.linqs.psl.application.inference.online.messages.actions;
 
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
@@ -26,25 +24,24 @@ import org.linqs.psl.util.StringUtils;
 import java.util.UUID;
 
 /**
- * Query an existing observation from the model.
- * String format: Query <predicate> <args> ...
+ * Update an existing observation from the model.
+ * String format: UPDATE <predicate> <args> ... [value]
  */
-public class QueryAtom extends OnlineAction {
+public class UpdateObservation extends OnlineAction {
     private StandardPredicate predicate;
     private Constant[] arguments;
+    private float value;
 
-    public QueryAtom(UUID actionID, String clientCommand) {
+    public UpdateObservation(UUID actionID, String clientCommand) {
         super(actionID, clientCommand);
-    }
-
-    public QueryAtom(Atom atom) {
-        super();
-        this.predicate = (StandardPredicate) atom.getPredicate();
-        this.arguments = (Constant[]) atom.getArguments();
     }
 
     public StandardPredicate getPredicate() {
         return predicate;
+    }
+
+    public float getValue() {
+        return value;
     }
 
     public Constant[] getArguments() {
@@ -54,23 +51,24 @@ public class QueryAtom extends OnlineAction {
     @Override
     public String toString() {
         return String.format(
-                "Query\t%s\t%s",
-                predicate.getName(),
-                StringUtils.join("\t", arguments).replace("'", ""));
+                "UPDATE\t%s\t%s\t%f",
+                predicate.getName(), StringUtils.join("\t", arguments).replace("'", ""),
+                value);
     }
 
     @Override
     public void parse(String string) {
         String[] parts = string.split("\t");
 
-        assert(parts[0].equalsIgnoreCase("query"));
+        assert(parts[0].equalsIgnoreCase("update"));
 
-        if (parts.length < 2) {
+        if (parts.length < 3) {
             throw new IllegalArgumentException("Not enough arguments.");
         }
 
-        AtomInfo atomInfo = parseAtom(parts, 1);
+        OnlineAction.AtomInfo atomInfo = parseAtom(parts, 1);
         predicate = atomInfo.predicate;
         arguments = atomInfo.arguments;
+        value = atomInfo.value;
     }
 }

@@ -18,14 +18,14 @@
 package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.online.messages.actions.model.updates.AddAtom;
-import org.linqs.psl.application.inference.online.messages.actions.model.updates.ObserveAtom;
-import org.linqs.psl.application.inference.online.messages.actions.model.updates.DeleteAtom;
-import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
-import org.linqs.psl.application.inference.online.messages.actions.controls.Sync;
-import org.linqs.psl.application.inference.online.messages.actions.model.updates.UpdateObservation;
-import org.linqs.psl.application.inference.online.messages.actions.controls.QueryAtom;
-import org.linqs.psl.application.inference.online.messages.actions.controls.WriteInferredPredicates;
+import org.linqs.psl.application.inference.online.messages.actions.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.ObserveAtom;
+import org.linqs.psl.application.inference.online.messages.actions.DeleteAtom;
+import org.linqs.psl.application.inference.online.messages.actions.Stop;
+import org.linqs.psl.application.inference.online.messages.actions.Sync;
+import org.linqs.psl.application.inference.online.messages.actions.UpdateObservation;
+import org.linqs.psl.application.inference.online.messages.actions.QueryAtom;
+import org.linqs.psl.application.inference.online.messages.actions.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;

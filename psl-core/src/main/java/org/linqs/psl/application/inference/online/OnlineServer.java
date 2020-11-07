@@ -18,9 +18,9 @@
 package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.online.messages.OnlinePacket;
-import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
+import org.linqs.psl.application.inference.online.messages.actions.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
+import org.linqs.psl.application.inference.online.messages.actions.Stop;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.ModelInformation;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
@@ -257,7 +257,6 @@ public class OnlineServer implements Closeable {
                 try {
                     packet = OnlinePacket.getOnlinePacket(inputStream.readObject().toString());
                     newAction = OnlineAction.getAction(packet.getIdentifier(), packet.getMessage());
-//                    log.trace("Received action: " + newAction);
                 } catch (IOException | ClassNotFoundException ex) {
                     throw new RuntimeException(ex);
                 }

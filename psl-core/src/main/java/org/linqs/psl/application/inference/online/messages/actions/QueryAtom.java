@@ -15,10 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.model.updates;
+package org.linqs.psl.application.inference.online.messages.actions;
 
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
@@ -26,31 +24,19 @@ import org.linqs.psl.util.StringUtils;
 import java.util.UUID;
 
 /**
- * Update an existing observation from the model.
- * String format: UPDATE <predicate> <args> ... [value]
+ * Query an existing observation from the model.
+ * String format: UUID Query <predicate> <args> ...
  */
-public class UpdateObservation extends OnlineAction {
+public class QueryAtom extends OnlineAction {
     private StandardPredicate predicate;
     private Constant[] arguments;
-    private float value;
 
-    public UpdateObservation(UUID actionID, String clientCommand) {
+    public QueryAtom(UUID actionID, String clientCommand) {
         super(actionID, clientCommand);
-    }
-
-    public UpdateObservation(Atom atom, float value) {
-        super();
-        this.predicate = (StandardPredicate) atom.getPredicate();
-        this.arguments = (Constant[]) atom.getArguments();
-        this.value = value;
     }
 
     public StandardPredicate getPredicate() {
         return predicate;
-    }
-
-    public float getValue() {
-        return value;
     }
 
     public Constant[] getArguments() {
@@ -60,24 +46,23 @@ public class UpdateObservation extends OnlineAction {
     @Override
     public String toString() {
         return String.format(
-                "UPDATE\t%s\t%s\t%f",
-                predicate.getName(), StringUtils.join("\t", arguments).replace("'", ""),
-                value);
+                "Query\t%s\t%s",
+                predicate.getName(),
+                StringUtils.join("\t", arguments).replace("'", ""));
     }
 
     @Override
     public void parse(String string) {
         String[] parts = string.split("\t");
 
-        assert(parts[0].equalsIgnoreCase("update"));
+        assert(parts[0].equalsIgnoreCase("query"));
 
-        if (parts.length < 3) {
+        if (parts.length < 2) {
             throw new IllegalArgumentException("Not enough arguments.");
         }
 
-        OnlineAction.AtomInfo atomInfo = parseAtom(parts, 1);
+        AtomInfo atomInfo = parseAtom(parts, 1);
         predicate = atomInfo.predicate;
         arguments = atomInfo.arguments;
-        value = atomInfo.value;
     }
 }

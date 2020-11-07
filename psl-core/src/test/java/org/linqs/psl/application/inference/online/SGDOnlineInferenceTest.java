@@ -17,9 +17,7 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.junit.Ignore;
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
 import org.linqs.psl.config.Options;
@@ -35,12 +33,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.junit.Assert.assertEquals;
 
@@ -99,32 +94,14 @@ public class SGDOnlineInferenceTest {
         }
     }
 
-    private  BlockingQueue<OnlineAction> parseCommands(String commands) {
-        BlockingQueue<OnlineAction> onlineActions = new LinkedBlockingQueue<OnlineAction>();
-
-        for (String actionString : commands.split("\n")) {
-            try {
-                onlineActions.put(OnlineAction.getAction(actionString));
-            } catch (InterruptedException ex) {
-                // Ignore.
-            }
-        }
-
-        return onlineActions;
-    }
-
     private List<OnlineResponse> clientSession(String commands) {
-        OnlineClient onlineClient = null;
-        List<OnlineResponse> sessionOutput = new ArrayList<OnlineResponse>();
-        BlockingQueue<OnlineAction> onlineActions = parseCommands(commands);
+        List<OnlineResponse> sessionOutput = null;
 
-        onlineClient = new OnlineClient(new PrintStream(new ByteArrayOutputStream()), onlineActions, sessionOutput);
-        Thread onlineClientThread = new Thread(onlineClient);
-        onlineClientThread.start();
-
-        try {
-            onlineClientThread.join();
-        } catch (InterruptedException ex) {
+        try (
+                InputStream testInput = new ByteArrayInputStream(commands.getBytes());
+                PrintStream testOut = new PrintStream(new ByteArrayOutputStream())) {
+            sessionOutput = OnlineClient.run(testInput, testOut);
+        } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
 
@@ -175,39 +152,28 @@ public class SGDOnlineInferenceTest {
      */
     @Test
     public void testAddAtoms() {
-        // Check that adding atoms will not create new random variable atoms.
         String commands =
                 "ADD\tRead\tPerson\tConnor\t1.0\n" +
-                "ADD\tRead\tNice\tConnor\t1.0\n" +
+                "ADD\tRead\tNice\tConnor\t0.01\n" +
+                "Query\tPerson\tConnor\n" +
+                "Query\tNice\tConnor\n" +
                 "Query\tFriends\tConnor\tAlice\n" +
                 "Query\tFriends\tConnor\tBob\n" +
                 "Query\tFriends\tAlice\tConnor\n" +
                 "Query\tFriends\tBob\tConnor\n" +
-                "EXIT";
-
-        assertAtomValues(commands, new double[] {-1.0, -1.0, -1.0, -1.0});
-
-        // Reset model.
-        cleanup();
-        setup();
-
-        // Check that atoms are added to the model and hold the expected values.
-        commands =
-                "ADD\tRead\tPerson\tConnor\t1.0\n" +
-                "ADD\tRead\tNice\tConnor\t0.0\n" +
                 "ADD\tWrite\tFriends\tAlice\tConnor\n" +
                 "ADD\tWrite\tFriends\tConnor\tAlice\n" +
                 "ADD\tWrite\tFriends\tConnor\tBob\n" +
                 "ADD\tWrite\tFriends\tBob\tConnor\n" +
-                "Query\tPerson\tConnor\n" +
-                "Query\tNice\tConnor\n" +
-                "Query\tFriends\tAlice\tConnor\n" +
                 "Query\tFriends\tConnor\tAlice\n" +
+                "Query\tFriends\tAlice\tConnor\n" +
                 "Query\tFriends\tConnor\tBob\n" +
                 "Query\tFriends\tBob\tConnor\n" +
                 "EXIT";
 
-        assertAtomValues(commands, new double[] {1.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+        double[] values = {1.0, 0.01, -1.0, -1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0};
+
+        assertAtomValues(commands, values);
     }
 
     @Test
@@ -237,7 +203,7 @@ public class SGDOnlineInferenceTest {
      * There are three ways to effectively change the partition of an atom.
      * 1. Delete and then Add an atom.
      * 2. Add an atom with predicates and arguments that already exists in the model but with a different partition.
-     * 3. Using the Observed or Unobserved actions for random variables and observations respectively. (preferred).
+     * 3. Using the Observe or Unobserve actions for random variables and observation respectively. (preferred).
      */
     @Test
     public void testChangeAtomPartition() {

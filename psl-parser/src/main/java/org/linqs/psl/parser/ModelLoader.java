@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.parser;
 
+import org.linqs.psl.database.DataStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -102,12 +103,15 @@ import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.atn.ParserATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.io.Reader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -117,7 +121,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     /**
      * Parse a string into either a full PSL Rule or a rule without weight or potential squaring information.
      */
-    public static RulePartial loadRulePartial(String input) {
+    public static RulePartial loadRulePartial(DataStore data, String input) {
         PSLParser parser = null;
         try {
             parser = getParser(input);
@@ -134,7 +138,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             throw (RuntimeException)ex.getCause();
         }
 
-        ModelLoader visitor = new ModelLoader();
+        ModelLoader visitor = new ModelLoader(data);
         return visitor.visitPslRulePartial(context);
     }
 
@@ -142,8 +146,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
      * Parse and return a single rule.
      * If exactly one rule is not specified, an exception is thrown.
      */
-    public static Rule loadRule(String input) {
-        Model model = load(new StringReader(input));
+    public static Rule loadRule(DataStore data, String input) {
+        Model model = load(data, new StringReader(input));
 
         int ruleCount = 0;
         Rule targetRule = null;
@@ -165,8 +169,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     /**
      * Convenience interface to load().
      */
-    public static Model load(String input) {
-        return load(new StringReader(input));
+    public static Model load(DataStore data, String input) {
+        return load(data, new StringReader(input));
     }
 
     /**
@@ -174,7 +178,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
      * The input should only contain rules and the DataStore should contain all the predicates
      * used by the rules.
      */
-    public static Model load(Reader input) {
+    public static Model load(DataStore data, Reader input) {
         PSLParser parser = null;
         try {
             parser = getParser(input);
@@ -191,33 +195,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             throw (RuntimeException)ex.getCause();
         }
 
-        ModelLoader visitor = new ModelLoader();
+        ModelLoader visitor = new ModelLoader(data);
         return visitor.visitProgram(program, parser);
-    }
-
-    static Atom loadAtom(String input) {
-        return loadAtom(new StringReader(input));
-    }
-
-    static Atom loadAtom(Reader input) {
-        PSLParser parser = null;
-        try {
-            parser = getParser(input);
-        } catch (IOException ex) {
-            // Cancel the lex and rethrow.
-            throw new RuntimeException("Failed to lex atom.", ex);
-        }
-
-        AtomContext atomContext = null;
-        try {
-            atomContext = parser.atom();
-        } catch (ParseCancellationException ex) {
-            // Cancel the parse and rethrow the cause.
-            throw (RuntimeException)ex.getCause();
-        }
-
-        ModelLoader visitor = new ModelLoader();
-        return visitor.visitAtom(atomContext);
     }
 
     /**
@@ -251,7 +230,13 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
         return getParser(new StringReader(input));
     }
 
-    ModelLoader() {}
+    // Non-static
+
+    private final DataStore data;
+
+    private ModelLoader(DataStore data) {
+        this.data = data;
+    }
 
     public Model visitProgram(ProgramContext ctx, PSLParser parser) {
         Model model = new Model();

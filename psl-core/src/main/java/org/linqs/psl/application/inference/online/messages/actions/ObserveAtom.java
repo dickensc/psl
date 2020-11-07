@@ -15,10 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.model.updates;
+package org.linqs.psl.application.inference.online.messages.actions;
 
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
@@ -27,7 +25,7 @@ import java.util.UUID;
 
 /**
  * Add a new atom to the model.
- * String format: Observe <predicate> <args> ... [value]
+ * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
  */
 public class ObserveAtom extends OnlineAction {
     private StandardPredicate predicate;
@@ -36,13 +34,6 @@ public class ObserveAtom extends OnlineAction {
 
     public ObserveAtom(UUID identifier, String clientCommand) {
         super(identifier, clientCommand);
-    }
-
-    public ObserveAtom(Atom atom, float value) {
-        super();
-        this.predicate = (StandardPredicate) atom.getPredicate();
-        this.arguments = (Constant[]) atom.getArguments();
-        this.value = value;
     }
 
     public StandardPredicate getPredicate() {
