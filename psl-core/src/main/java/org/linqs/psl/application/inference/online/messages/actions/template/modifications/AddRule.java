@@ -23,11 +23,11 @@ import org.linqs.psl.model.rule.Rule;
 import java.util.UUID;
 
 /**
- * Add a new atom to the model.
+ * Add a new rule to the model.
  * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
  */
 public class AddRule extends OnlineAction {
-//    private Rule rule;
+    private Rule rule;
 
     public AddRule(UUID identifier, String clientCommand) {
         super(identifier);
@@ -35,13 +35,13 @@ public class AddRule extends OnlineAction {
 
     public AddRule(Rule rule) {
         super();
-//        this.rule = rule;
+        this.rule = rule;
     }
 
-//    @Override
-//    public String toString() {
-//        return String.format(
-//                "ADDRULE\t%s",
-//                rule.toString());
-//    }
+    @Override
+    public String toString() {
+        return String.format(
+                "ADDRULE\t%s",
+                rule.toString());
+    }
 }

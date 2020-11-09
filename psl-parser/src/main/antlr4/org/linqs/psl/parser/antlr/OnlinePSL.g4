@@ -107,11 +107,11 @@ EXIT
     ;
 
 OBSERVE_ATOM
-    :   O B S E R V E
+    :   O B S E R V E A T O M
     ;
 
 QUERY_ATOM
-    :   Q U E R Y
+    :   Q U E R Y A T O M
     ;
 
 READ_PARTITION
@@ -127,7 +127,7 @@ SYNC
     ;
 
 UPDATE_OBSERVATION
-    :   U P D A T E
+    :   U P D A T E A T O M
     ;
 
 WRITE_INFERRED_PREDICATES

@@ -59,11 +59,19 @@ public class AddAtom extends OnlineAction {
 
     @Override
     public String toString() {
-        return String.format(
-                "ADD\t%s\t%s\t%s\t%.2f",
-                partition,
-                predicate.getName(),
-                StringUtils.join("\t", arguments).replace("'", ""),
-                value);
+        if (value == -1.0f) {
+            return String.format(
+                    "ADD\t%s\t%s\t%s",
+                    partition,
+                    predicate.getName(),
+                    StringUtils.join("\t", arguments).replace("'", ""));
+        } else {
+            return String.format(
+                    "ADD\t%s\t%s\t%s\t%.2f",
+                    partition,
+                    predicate.getName(),
+                    StringUtils.join("\t", arguments).replace("'", ""),
+                    value);
+        }
     }
 }

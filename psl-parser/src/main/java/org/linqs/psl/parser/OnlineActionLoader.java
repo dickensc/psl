@@ -127,7 +127,7 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
         LinkedList<OnlineAction> actions = new LinkedList<OnlineAction>();
         for (ActionContext actionCtx : ctx.action()) {
             try {
-                actions.push((OnlineAction)visit(actionCtx));
+                actions.add((OnlineAction)visit(actionCtx));
             } catch (RuntimeException ex) {
                 throw new RuntimeException("Failed to compile online action: [" + parser.getTokenStream().getText(actionCtx) + "]", ex);
             }
@@ -170,7 +170,7 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
             constants[i] = (Constant)atom.getArguments()[i];
         }
         String partition = ctx.PARTITION().getText();
-        float value = 1.0f;
+        float value = -1.0f;
         if (ctx.number() != null) {
             value = visitNumber(ctx.number());
         }
@@ -249,7 +249,7 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
 
     @Override
     public WriteInferredPredicates visitWriteInferredPredicates(WriteInferredPredicatesContext ctx) {
-        String outputDirectoryPath = ctx.STRING_LITERAL().getText();
+        String outputDirectoryPath = ctx.STRING_LITERAL().getText().replace("'","").replace("\"", "");
         return new WriteInferredPredicates(outputDirectoryPath);
     }
 

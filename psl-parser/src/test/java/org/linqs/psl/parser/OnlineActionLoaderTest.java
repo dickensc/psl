@@ -46,14 +46,120 @@ public class OnlineActionLoaderTest {
     @Test
     public void testAddAtom() {
         String input =
-            "AddAtom Read SINGLE('A') 1.0\n";
-        String[] expected = new String[]{"ADD\tREAD\tSINGLE\tA\t1.00"};
+            "AddAtom Read SINGLE('A') 1.0\n" +
+            "AddAtom Write DOUBLE('A', 'B')";
+        String[] expected = new String[]{
+            "ADD\tREAD\tSINGLE\tA\t1.00",
+            "ADD\tWRITE\tDOUBLE\tA\tB"
+        };
 
-        try {
-            OnlinePSLTest.assertActions(input, expected);
-        } catch (org.antlr.v4.runtime.NoViableAltException ex) {
-            System.out.println(ex.getOffendingToken());
-            throw ex;
-        }
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testDeleteAtom() {
+        String input =
+                "DeleteAtom Read SINGLE('A')\n" +
+                "DeleteAtom Write DOUBLE('A', 'B')";
+        String[] expected = new String[]{
+                "DELETE\tREAD\tSINGLE\tA",
+                "DELETE\tWRITE\tDOUBLE\tA\tB"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testObserveAtom() {
+        String input =
+                "ObserveAtom SINGLE('A') 0.5\n" +
+                "ObserveAtom DOUBLE('A', 'B') 1";
+        String[] expected = new String[]{
+                "OBSERVE\tSINGLE\tA\t0.50",
+                "OBSERVE\tDOUBLE\tA\tB\t1.00"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testUpdateObservation() {
+        String input =
+                "UpdateAtom SINGLE('A') 0.5\n" +
+                "UpdateAtom DOUBLE('A', 'B') 1";
+        String[] expected = new String[]{
+                "UPDATE\tSINGLE\tA\t0.50",
+                "UPDATE\tDOUBLE\tA\tB\t1.00"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testExit() {
+        String input =
+                "Exit";
+        String[] expected = new String[]{
+                "EXIT"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testQueryAtom() {
+        String input =
+                "QueryAtom SINGLE('A')\n" +
+                "QueryAtom DOUBLE('A', 'B')";
+        String[] expected = new String[]{
+                "QUERY\tSINGLE\tA",
+                "QUERY\tDOUBLE\tA\tB"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testStop() {
+        String input =
+                "Stop";
+        String[] expected = new String[]{
+                "STOP"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testSync() {
+        String input =
+                "Sync";
+        String[] expected = new String[]{
+                "SYNC"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testWriteInferredPredicates() {
+        String input =
+                "WriteInferredPredicates 'file/path'";
+        String[] expected = new String[]{
+                "WRITE\tfile/path"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
+    }
+
+    @Test
+    public void testAddRule() {
+        String input =
+                "AddRule 1: Single(A) & Double(A, B) >> Single(B) ^2";
+        String[] expected = new String[]{
+                "ADDRULE\t1.0: ( SINGLE(A) & DOUBLE(A, B) ) >> SINGLE(B) ^2"
+        };
+
+        OnlinePSLTest.assertActions(input, expected);
     }
 }

@@ -48,7 +48,7 @@ public class QueryAtom extends OnlineAction {
     @Override
     public String toString() {
         return String.format(
-                "Query\t%s\t%s",
+                "QUERY\t%s\t%s",
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""));
     }
