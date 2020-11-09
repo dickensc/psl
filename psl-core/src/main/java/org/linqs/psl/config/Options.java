@@ -45,12 +45,6 @@ import java.util.List;
  * The main() method will collect all the options and write them out to stdout as JSON.
  */
 public class Options {
-    public static final Option ONLINE = new Option(
-        "inference.online",
-        false,
-        "Whether we are running in online mode or not."
-    );
-
     public static final Option ONLINE_HOST = new Option(
         "inference.onlinehostname",
         "127.0.0.1",

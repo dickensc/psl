@@ -1,0 +1,3 @@
+AddAtom Read Likes('Charles','Surfing') 1.0
+Stop
+Exit

@@ -18,11 +18,9 @@
 package org.linqs.psl.cli;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
-import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
-import org.linqs.psl.config.Options;
 import org.linqs.psl.parser.OnlineActionLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,10 +38,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * A client that takes input on stdin and passes it to the online host specified in configuration.
  */
-public class OnlineClientCLI {
-    private static final Logger log = LoggerFactory.getLogger(OnlineClientCLI.class);
+public class OnlineClient {
+    private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
 
-    private OnlineClientCLI() {}
+    private OnlineClient() {}
 
     public static List<OnlineResponse> run(InputStream in, PrintStream out) {
         List<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
@@ -54,7 +52,8 @@ public class OnlineClientCLI {
             BlockingQueue<OnlineAction> onlineActions = new LinkedBlockingQueue<OnlineAction>();
 
             // Startup onlineClientThread for sending actions to server.
-            OnlineClient onlineClient = new OnlineClient(out, onlineActions, serverResponses);
+            org.linqs.psl.application.inference.online.OnlineClient onlineClient =
+                    new org.linqs.psl.application.inference.online.OnlineClient(out, onlineActions, serverResponses);
             Thread onlineClientThread = new Thread(onlineClient);
             onlineClientThread.start();
 

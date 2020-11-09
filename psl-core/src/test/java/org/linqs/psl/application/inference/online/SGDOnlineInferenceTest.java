@@ -44,8 +44,6 @@ public class SGDOnlineInferenceTest {
     public void setup() {
         cleanup();
 
-        Options.ONLINE.set(true);
-
         modelInfo = TestModel.getModel(true);
 
         // Close the predicates we are using.

@@ -206,7 +206,7 @@ public class OnlineServer implements Closeable {
 
         private void createServerTempFile() {
             try {
-                File tmpFile = File.createTempFile("OnlinePSLServer", ".tmp");
+                tmpFile = File.createTempFile("OnlinePSLServer", ".tmp");
                 tmpFile.deleteOnExit();
                 log.info("Temporary server config file at: " + tmpFile.getAbsolutePath());
             } catch (IOException ex) {

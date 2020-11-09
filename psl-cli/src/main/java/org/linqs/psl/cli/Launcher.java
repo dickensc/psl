@@ -18,7 +18,6 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
@@ -54,7 +53,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Set;
 
 /**
@@ -338,7 +336,7 @@ public class Launcher {
 
     private void runOnlineClient() {
         log.info("Starting OnlinePSL client.");
-        OnlineClientCLI.run(System.in, System.out);
+        OnlineClient.run(System.in, System.out);
         log.info("OnlinePSL client closed.");
     }
 
