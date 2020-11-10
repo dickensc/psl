@@ -27,6 +27,7 @@ import org.linqs.psl.application.inference.online.messages.actions.model.updates
 import org.linqs.psl.application.inference.online.messages.actions.controls.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.actions.controls.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.actions.template.modifications.AddRule;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineActionException;
@@ -36,6 +37,7 @@ import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Add;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 
 import org.linqs.psl.util.StringUtils;
@@ -101,6 +103,8 @@ public abstract class OnlineInference extends InferenceApplication {
 
         if (action.getClass() == AddAtom.class) {
             response = doAddAtom((AddAtom)action);
+        } else if (action.getClass() == AddRule.class) {
+            response = doAddRule((AddRule)action);
         } else if (action.getClass() == ObserveAtom.class) {
             response = doObserveAtom((ObserveAtom)action);
         } else if (action.getClass() == DeleteAtom.class) {
@@ -128,6 +132,15 @@ public abstract class OnlineInference extends InferenceApplication {
 
         modelUpdates = true;
         return String.format("Added atom: %s", atom.toStringWithValue());
+    }
+
+    protected String doAddRule(AddRule action) {
+        Rule newRule = action.getRule();
+
+        //TODO.
+
+        modelUpdates = true;
+        return String.format("Added rule: %s", newRule.toString());
     }
 
     protected String doObserveAtom(ObserveAtom action) {

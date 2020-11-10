@@ -20,8 +20,6 @@ package org.linqs.psl.application.inference.online.messages.actions.template.mod
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.model.rule.Rule;
 
-import java.util.UUID;
-
 /**
  * Add a new rule to the model.
  * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
@@ -29,13 +27,13 @@ import java.util.UUID;
 public class AddRule extends OnlineAction {
     private Rule rule;
 
-    public AddRule(UUID identifier, String clientCommand) {
-        super(identifier);
-    }
-
     public AddRule(Rule rule) {
         super();
         this.rule = rule;
+    }
+
+    public Rule getRule() {
+        return rule;
     }
 
     @Override

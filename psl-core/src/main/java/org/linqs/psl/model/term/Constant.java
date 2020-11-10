@@ -17,12 +17,10 @@
  */
 package org.linqs.psl.model.term;
 
-import java.io.Serializable;
-
 /**
  * An element in the universe over which a PSL program is grounded.
  */
-public abstract class Constant implements Serializable, Term {
+public abstract class Constant implements Term {
     public String toString() {
         return "'" + rawToString() + "'";
     }
