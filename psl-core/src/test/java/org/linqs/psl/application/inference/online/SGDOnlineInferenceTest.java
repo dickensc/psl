@@ -19,16 +19,27 @@ package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.OnlineTest;
 import org.linqs.psl.TestModel;
-import org.linqs.psl.config.Options;
+import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
+import org.linqs.psl.application.inference.online.messages.actions.controls.QueryAtom;
+import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
+import org.linqs.psl.application.inference.online.messages.actions.model.updates.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.updates.DeleteAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.updates.ObserveAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.updates.UpdateObservation;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.UniqueStringID;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class SGDOnlineInferenceTest {
     private TestModel.ModelInformation modelInfo;
@@ -59,7 +70,7 @@ public class SGDOnlineInferenceTest {
     @After
     public void cleanup() {
         if (onlineInferenceThread != null) {
-            OnlineTest.clientSession("STOP");
+            OnlineTest.clientSession(new Stop());
 
             try {
                 // Will wait 10 seconds for thread to finish otherwise will interrupt.
@@ -88,8 +99,13 @@ public class SGDOnlineInferenceTest {
      */
     @Test
     public void testBadQuery() {
+        BlockingQueue<OnlineAction> commands = new LinkedBlockingQueue<OnlineAction>();
+
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
         // Check that a non-existent new atom results in the expected server response.
-        OnlineTest.assertAtomValues( "Query\tFriends\tBob\tBob\nExit", new double[] {-1.0});
+        OnlineTest.assertAtomValues(commands, new double[] {-1.0});
     }
 
     /**
@@ -97,29 +113,31 @@ public class SGDOnlineInferenceTest {
      */
     @Test
     public void testUpdateObservation() {
-        String commands =
-                "UPDATE\tNice\tAlice\t0.0\n" +
-                "Query\tNice\tAlice\n" +
-                "EXIT";
+        BlockingQueue<OnlineAction> commands = new LinkedBlockingQueue<OnlineAction>();
 
-        OnlineTest.assertAtomValues( commands, new double[] {0.0});
+        commands.add(new UpdateObservation(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}, 0.0f));
+        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {0.0});
     }
 
-    /**
-     * Make sure that new atoms are added to model, are considered during inference, and
-     * result in the expected groundings.
-     */
+//    /**
+//     * Make sure that new atoms are added to model, are considered during inference, and
+//     * result in the expected groundings.
+//     */
 //    @Test
 //    public void testAddAtoms() {
+//        BlockingQueue<OnlineAction> commands = new LinkedBlockingQueue<OnlineAction>();
+//
 //        // Check that adding atoms will not create new random variable atoms.
-//        String commands =
-//                "ADD\tRead\tPerson\tConnor\t1.0\n" +
-//                "ADD\tRead\tNice\tConnor\t1.0\n" +
-//                "Query\tFriends\tConnor\tAlice\n" +
-//                "Query\tFriends\tConnor\tBob\n" +
-//                "Query\tFriends\tAlice\tConnor\n" +
-//                "Query\tFriends\tBob\tConnor\n" +
-//                "EXIT";
+//        commands.add(new AddAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+//        commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+//        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}));
+//        commands.add(new Exit());
 //
 //        OnlineTest.assertAtomValues(commands, new double[] {-1.0, -1.0, -1.0, -1.0});
 //
@@ -128,41 +146,49 @@ public class SGDOnlineInferenceTest {
 //        setup();
 //
 //        // Check that atoms are added to the model and hold the expected values.
-//        commands =
-//                "ADD\tRead\tPerson\tConnor\t1.0\n" +
-//                "ADD\tRead\tNice\tConnor\t0.0\n" +
-//                "ADD\tWrite\tFriends\tAlice\tConnor\n" +
-//                "ADD\tWrite\tFriends\tConnor\tAlice\n" +
-//                "ADD\tWrite\tFriends\tConnor\tBob\n" +
-//                "ADD\tWrite\tFriends\tBob\tConnor\n" +
-//                "Query\tPerson\tConnor\n" +
-//                "Query\tNice\tConnor\n" +
-//                "Query\tFriends\tAlice\tConnor\n" +
-//                "Query\tFriends\tConnor\tAlice\n" +
-//                "Query\tFriends\tConnor\tBob\n" +
-//                "Query\tFriends\tBob\tConnor\n" +
-//                "EXIT";
+//        commands.add(new AddAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+//        commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Connor")}, 0.0f));
+//        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}, 0.0f));
+//        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}, 0.0f));
+//        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}, 0.0f));
+//        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}, 0.0f));
+//        commands.add(new QueryAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Connor")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}));
+//        commands.add(new Exit());
 //
 //        OnlineTest.assertAtomValues(commands, new double[] {1.0, 0.0, 0.0, 0.0, 0.0, 0.0});
 //    }
 
     @Test
     public void testAtomDeleting() {
+        BlockingQueue<OnlineAction> commands = new LinkedBlockingQueue<OnlineAction>();
+
         // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
         //  The atom will not be deleted if there is an add and then a delete of the same atom before the atoms are
         //  activated. This behavior is also noted in streaming term store deleteAtom.
-//        String commands =
-//                "DELETE\tRead\tNice\tAlice\n" +
-//                "ADD\tRead\tNice\tAlice\t1.0\n" +
-//                "DELETE\tRead\tNice\tAlice\n" +
-//                "EXIT";
+//        commands.add(new DeleteAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+//        commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}, 1.0f));
+//        commands.add(new DeleteAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+//        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+//        commands.add(new Exit());
+//
+//        // Reset model.
+//        cleanup();
+//        setup();
+//
+//        double[] values = {-1.0};
+//
+//        OnlineTest.assertAtomValues(commands, values);
 
-        String commands =
-                "DELETE\tRead\tNice\tAlice\n" +
-                "DELETE\tRead\tPerson\tAlice\n" +
-                "Query\tPerson\tAlice\n" +
-                "Query\tNice\tAlice\n" +
-                "Exit";
+        commands.add(new DeleteAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new DeleteAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new Exit());
 
         double[] values = {-1.0, -1.0};
 
@@ -177,10 +203,12 @@ public class SGDOnlineInferenceTest {
      */
     @Test
     public void testChangeAtomPartition() {
-        String commands =
-                "ADD\tRead\tFriends\tAlice\tBob\t0.5\n" +
-                "Query\tFriends\tAlice\tBob\n" +
-                "EXIT";
+        BlockingQueue<OnlineAction> commands = new LinkedBlockingQueue<OnlineAction>();
+
+        commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
+                new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
 
         double[] values = {0.5};
 
@@ -190,11 +218,11 @@ public class SGDOnlineInferenceTest {
         cleanup();
         setup();
 
-        commands =
-                "DELETE\tWrite\tFriends\tAlice\tBob\n" +
-                "ADD\tRead\tFriends\tAlice\tBob\t0.5\n" +
-                "Query\tFriends\tAlice\tBob\n" +
-                "EXIT";
+        commands.add(new DeleteAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
+                new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
 
         OnlineTest.assertAtomValues(commands, values);
 
@@ -202,10 +230,9 @@ public class SGDOnlineInferenceTest {
         cleanup();
         setup();
 
-        commands =
-                "OBSERVE\tFriends\tAlice\tBob\t0.5\n" +
-                "Query\tFriends\tAlice\tBob\n" +
-                "EXIT";
+        commands.add(new ObserveAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
 
         OnlineTest.assertAtomValues(commands, values);
     }

@@ -89,7 +89,6 @@ public class OnlineClient implements Runnable {
                     }
 
                     OnlinePacket onlinePacket = new OnlinePacket(onlineAction.getIdentifier(), onlineAction);
-//                    log.trace("Sending action: " + onlineAction);
                     socketOutputStream.writeObject(onlinePacket);
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
