@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.linqs.psl.application.inference.online.messages.OnlinePacket;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
@@ -67,8 +66,7 @@ public class OnlineClient implements Runnable {
             // Get model information from server.
             ModelInformation modelInformation = null;
             try {
-                OnlinePacket packet = (OnlinePacket)socketInputStream.readObject();
-                modelInformation = (ModelInformation)packet.getMessage();
+                modelInformation = (ModelInformation)socketInputStream.readObject();
             } catch (IOException | ClassNotFoundException ex) {
                 throw new RuntimeException(ex);
             }
@@ -88,8 +86,7 @@ public class OnlineClient implements Runnable {
                         continue;
                     }
 
-                    OnlinePacket onlinePacket = new OnlinePacket(onlineAction.getIdentifier(), onlineAction);
-                    socketOutputStream.writeObject(onlinePacket);
+                    socketOutputStream.writeObject(onlineAction);
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -122,11 +119,11 @@ public class OnlineClient implements Runnable {
 
         @Override
         public void run() {
-            OnlinePacket packet = null;
+            OnlineResponse response = null;
 
             while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    packet = (OnlinePacket)inputStream.readObject();
+                    response = (OnlineResponse)inputStream.readObject();
                 } catch (EOFException ex) {
                     // Done.
                     break;
@@ -134,7 +131,7 @@ public class OnlineClient implements Runnable {
                     throw new RuntimeException(ex);
                 }
 
-                serverResponses.add((OnlineResponse)packet.getMessage());
+                serverResponses.add(response);
             }
         }
     }

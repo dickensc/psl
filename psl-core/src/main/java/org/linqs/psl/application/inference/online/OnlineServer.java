@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.linqs.psl.application.inference.online.messages.OnlinePacket;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
@@ -99,10 +98,9 @@ public class OnlineServer implements Closeable {
     public void onActionExecution(OnlineAction action, OnlineResponse onlineResponse) {
         ClientConnectionThread clientConnectionThread = messageIDConnectionMap.get(action.getIdentifier());
         ObjectOutputStream outputStream = clientConnectionThread.outputStream;
-        OnlinePacket onlinePacket = new OnlinePacket(onlineResponse.getIdentifier(), onlineResponse);
 
         try {
-            outputStream.writeObject(onlinePacket);
+            outputStream.writeObject(onlineResponse);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -241,8 +239,7 @@ public class OnlineServer implements Closeable {
 
             try {
                 ModelInformation modelInformation = new ModelInformation(standardPredicates.toArray(new StandardPredicate[]{}));
-                OnlinePacket onlinePacket = new OnlinePacket(modelInformation.getIdentifier(), modelInformation);
-                outputStream.writeObject(onlinePacket);
+                outputStream.writeObject(modelInformation);
             } catch (IOException ex) {
                 close();
                 throw new RuntimeException(ex);
@@ -251,12 +248,10 @@ public class OnlineServer implements Closeable {
 
         @Override
         public void run() {
-            OnlinePacket packet = null;
             OnlineAction newAction = null;
             while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    packet = (OnlinePacket)inputStream.readObject();
-                    newAction = (OnlineAction)packet.getMessage();
+                    newAction = (OnlineAction)inputStream.readObject();
 //                    log.trace("Received action: " + newAction);
                 } catch (IOException | ClassNotFoundException ex) {
                     throw new RuntimeException(ex);
