@@ -22,6 +22,7 @@ import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.IteratorUtils;
@@ -62,7 +63,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         // If there are at least two literals, then there will be a hinge
         // (otherwise it will just be linear).
         boolean nonNegative = (this.posLiterals.size() + this.negLiterals.size() > 1);
-        dissatisfaction = new GeneralFunction(nonNegative, false, rvaCount);
+        dissatisfaction = new GeneralFunction(nonNegative, false, rvaCount, true);
 
         // Note that the pos/neg qualifier are w.r.t the negated DNF.
         // This means that the potential function being constructed here is actually the

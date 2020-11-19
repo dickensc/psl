@@ -78,10 +78,10 @@ public class Formula2SQL {
 
     /**
      * Convert a formula to a query that will fetch all possible combinations of constants used in that
-     * formual (aka grounding).
-     * This variant will enforce unqiue results (DISTINCT).
+     * formula (aka grounding).
+     * This variant will enforce unique results (DISTINCT).
      * @param projection the collection of variables (columns) to return (the variable's name will be used
-     * as the column alias). If not set, all columns (*) will be retutned.
+     * as the column alias). If not set, all columns (*) will be returned.
      * @param database the database to query over. The read and write partitions will be picked up from here.
      */
     public Formula2SQL(Set<Variable> projection, RDBMSDatabase database) {

@@ -1043,7 +1043,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 

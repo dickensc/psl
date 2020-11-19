@@ -365,7 +365,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             }
         }
 
-        // Note that unweighed rules will ground an equality, while weighted rules will instead
+        // Note that unweighted rules will ground an equality, while weighted rules will instead
         // ground a largerThan and lessThan.
         GroundRule groundRule = null;
         if (isWeighted() && FunctionComparator.EQ.equals(expression.getComparator())) {
@@ -436,7 +436,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         for (int atomIndex = 0; atomIndex < resources.groundAtoms.length; atomIndex++) {
             resources.groundAtoms[atomIndex] = null;
 
-            // We will need to check the database for existance if we have an open summation atom.
+            // We will need to check the database for existence if we have an open summation atom.
             boolean checkDatabase =
                     resources.flatSummationAtoms[atomIndex] &&
                     !atomManager.isClosed((StandardPredicate)resources.queryAtoms.get(atomIndex).getPredicate());
@@ -503,7 +503,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         }
         resources.finalCoefficient = resources.flatExpression.getFinalCoefficient().getValue(resources.summationCounts);
 
-        // Note that unweighed rules will ground an equality, while weighted rules will instead
+        // Note that unweighted rules will ground an equality, while weighted rules will instead
         // ground a largerThan and lessThan.
         GroundRule groundRule = null;
         if (isWeighted() && FunctionComparator.EQ.equals(resources.flatExpression.getComparator())) {
@@ -824,13 +824,19 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     /**
      * Query the database for the possible replacements for summation variables.
      */
-    private Map<SummationVariable, ResultList> fetchSummationConstants(
-            Map<SummationVariable, SummationAtom> summationMapping, RDBMSDatabase database) {
-        Map<SummationVariable, ResultList> summationConstants = new HashMap<SummationVariable, ResultList>();
+    private Map<SummationVariable, Map<Predicate, ResultList>> fetchSummationConstants(
+            Map<SummationVariable, List<SummationAtom>> summationMapping, RDBMSDatabase database) {
+        Map<SummationVariable, Map<Predicate, ResultList>> summationConstants = new HashMap<SummationVariable, Map<Predicate, ResultList>>();
 
-        for (Map.Entry<SummationVariable, SummationAtom> entry : summationMapping.entrySet()) {
-            ResultList results = fetchSummationValues(database, entry.getKey(), entry.getValue());
-            summationConstants.put(entry.getKey(), results);
+        for (Map.Entry<SummationVariable, List<SummationAtom>> entry : summationMapping.entrySet()) {
+            Map<Predicate, ResultList> resultListMap = new HashMap<Predicate, ResultList>();
+            for (SummationAtom atom : entry.getValue()) {
+                // TODO (Charles): There is an issue with this if one atom has a constant argument and another does not.
+                if (!resultListMap.containsKey(atom.getPredicate())) {
+                    resultListMap.put(atom.getPredicate(), fetchSummationValues(database, entry.getKey(), atom));
+                }
+            }
+            summationConstants.put(entry.getKey(), resultListMap);
         }
 
         return summationConstants;
@@ -845,7 +851,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             List<Coefficient> flatCoefficients,
             List<SummationVariable[]> flatSummationVariables) {
         // All the summation variables mapped to their possible constants.
-        Map<SummationVariable, ResultList> summationConstants = fetchSummationConstants(expression.getSummationMapping(), database);
+        Map<SummationVariable, Map<Predicate, ResultList>> summationConstants =
+                fetchSummationConstants(expression.getSummationMapping(), database);
 
         flatAtoms.clear();
         flatCoefficients.clear();
@@ -899,7 +906,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                     }
 
                     // Replace this atom using the constants for this summation variable.
-                    ResultList replacements = summationConstants.get((SummationVariable)argument);
+                    ResultList replacements = summationConstants.get((SummationVariable)argument).get(atom.getPredicate());
                     for (int resultIndex = 0; resultIndex < replacements.size(); resultIndex++) {
                         flatCoefficients.add(coefficient);
                         flatSummationVariables.add(variables);
