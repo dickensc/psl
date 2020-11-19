@@ -53,7 +53,7 @@ public class Multiply extends BinaryCoefficient {
             return new ConstantNumber(0.0f);
         }
 
-        // If one of the sides is 1, then return the other size.
+        // If one of the sides is 1, then return the other side.
         if (lhs instanceof ConstantNumber && MathUtils.equals(((ConstantNumber)lhs).value, 1.0f)) {
             return rhs;
         }

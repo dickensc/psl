@@ -109,6 +109,7 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 import java.io.Reader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -300,7 +301,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
     @Override
     public WeightedLogicalRule visitWeightedLogicalRule(WeightedLogicalRuleContext ctx) {
-        Double w = visitWeightExpression(ctx.weightExpression());
+        Float w = visitWeightExpression(ctx.weightExpression());
         Formula f = visitLogicalRuleExpression(ctx.logicalRuleExpression());
         Boolean sq = false;
         if (ctx.EXPONENT_EXPRESSION() != null) {
@@ -403,7 +404,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
     @Override
     public WeightedArithmeticRule visitWeightedArithmeticRule(WeightedArithmeticRuleContext ctx) {
-        Double w = visitWeightExpression(ctx.weightExpression());
+        Float w = visitWeightExpression(ctx.weightExpression());
         ArithmeticRuleExpression expression = (ArithmeticRuleExpression) visitArithmeticRuleExpression(ctx.arithmeticRuleExpression());
         Map<SummationVariable, Formula> filterClauses = new HashMap<SummationVariable, Formula>();
         for (int i = 0; i < ctx.filterClause().size(); i++) {
@@ -430,6 +431,20 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
     @Override
     public ArithmeticRuleExpression visitArithmeticRuleExpression(ArithmeticRuleExpressionContext ctx) {
+        // Mutual Information Operator.
+        if (ctx.MUTUAL_INFORMATION() != null) {
+            List<SummationAtomOrAtom> atoms = new LinkedList<SummationAtomOrAtom>(
+                    Arrays.asList(visitAtom((AtomContext)ctx.getChild(2)), visitAtom((AtomContext)ctx.getChild(4))));
+            // Positive coefficient indicates lhs atom, negative coefficient indicates rhs atom.
+            List<Coefficient> coefficients = new LinkedList<Coefficient>(
+                    Arrays.asList(new ConstantNumber(1.0f), new ConstantNumber(-1.0f)));
+            Coefficient finalCoefficient = new ConstantNumber(0.0f);
+            FunctionComparator relationalComparison = FunctionComparator.MI;
+
+            return new ArithmeticRuleExpression(coefficients, atoms, relationalComparison, finalCoefficient);
+        }
+
+        // Standard Arithmetic Rule
         LinearArithmeticExpression lhs = visitLinearArithmeticExpression((LinearArithmeticExpressionContext)ctx.getChild(0));
         FunctionComparator relationalComparison = visitArithmeticRuleRelation((ArithmeticRuleRelationContext)ctx.getChild(1));
         LinearArithmeticExpression rhs = visitLinearArithmeticExpression((LinearArithmeticExpressionContext)ctx.getChild(2));
@@ -480,7 +495,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
         }
 
         if (ctx.getChildCount() != 3) {
-            throw new IllegalStateException("Expeciting three children.");
+            throw new IllegalStateException("Expecting three children.");
         }
 
         LinearArithmeticExpression lhs = visitLinearArithmeticExpression((LinearArithmeticExpressionContext)ctx.getChild(0));
@@ -790,8 +805,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     }
 
     @Override
-    public Double visitWeightExpression(WeightExpressionContext ctx) {
-        return Double.parseDouble(ctx.number().getText());
+    public Float visitWeightExpression(WeightExpressionContext ctx) {
+        return Float.parseFloat(ctx.number().getText());
     }
 
     @Override
@@ -871,8 +886,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     }
 
     @Override
-    public Double visitNumber(NumberContext ctx) {
-        return Double.parseDouble(ctx.getText());
+    public Float visitNumber(NumberContext ctx) {
+        return Float.parseFloat(ctx.getText());
     }
 
     private static class ArithmeticCoefficientOperand {

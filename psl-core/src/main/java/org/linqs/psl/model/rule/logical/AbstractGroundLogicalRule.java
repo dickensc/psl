@@ -22,6 +22,7 @@ import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.IteratorUtils;
