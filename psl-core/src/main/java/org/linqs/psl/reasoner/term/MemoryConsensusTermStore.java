@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 
@@ -57,13 +56,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public synchronized V createLocalVariable(GroundAtom groundAtom) {
-        if (!(groundAtom instanceof RandomVariableAtom)) {
-            throw new IllegalArgumentException("MemoryConsensusTermStores do not keep track of observed atoms (" + groundAtom + ").");
-        }
-
-        RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
-
+    public synchronized V createLocalVariable(RandomVariableAtom atom) {
         numLocalVariables++;
 
         store.createLocalVariable(atom);
@@ -87,7 +80,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     public int getNumConsensusVariables() {
-        return store.getNumRandomVariables();
+        return store.getNumVariables();
     }
 
     public List<V> getLocalVariables(int consensusId) {

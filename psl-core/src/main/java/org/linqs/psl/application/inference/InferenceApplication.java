@@ -44,7 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * All the tools necessary to perform inference.
+ * All the tools necessary to perform infernce.
  * An inference application owns the ground atoms (Database/AtomManager), ground rules (GroundRuleStore), the terms (TermStore),
  * how terms are generated (TermGenerator), and how inference is actually performed (Reasoner).
  * As such, the inference application is the top level authority for these items and methods.
@@ -54,7 +54,7 @@ public abstract class InferenceApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
 
     protected List<Rule> rules;
-    protected Database database;
+    protected Database db;
     protected Reasoner reasoner;
     protected InitialValue initialValue;
 
@@ -70,13 +70,13 @@ public abstract class InferenceApplication implements ModelApplication {
 
     private boolean atomsCommitted;
 
-    protected InferenceApplication(List<Rule> rules, Database database) {
-        this(rules, database, Options.INFERENCE_RELAX.getBoolean());
+    protected InferenceApplication(List<Rule> rules, Database db) {
+        this(rules, db, Options.INFERENCE_RELAX.getBoolean());
     }
 
-    protected InferenceApplication(List<Rule> rules, Database database, boolean relaxHardConstraints) {
+    protected InferenceApplication(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         this.rules = new ArrayList<Rule>(rules);
-        this.database = database;
+        this.db = db;
         this.atomsCommitted = false;
 
         this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
@@ -93,16 +93,16 @@ public abstract class InferenceApplication implements ModelApplication {
      * This will call into the abstract method completeInitialize().
      */
     protected void initialize() {
-        log.debug("Creating persisted atom manager.");
-        atomManager = createAtomManager(database);
+        log.debug("Creating persisted atom mannager.");
+        atomManager = createAtomManager(db);
         log.debug("Atom manager initialization complete.");
 
         initializeAtoms();
 
         reasoner = createReasoner();
-        termGenerator = createTermGenerator();
         termStore = createTermStore();
         groundRuleStore = createGroundRuleStore();
+        termGenerator = createTermGenerator();
 
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
@@ -117,8 +117,8 @@ public abstract class InferenceApplication implements ModelApplication {
         completeInitialize();
     }
 
-    protected PersistedAtomManager createAtomManager(Database database) {
-        return new PersistedAtomManager(database, false, initialValue);
+    protected PersistedAtomManager createAtomManager(Database db) {
+        return new PersistedAtomManager(db, false, initialValue);
     }
 
     protected GroundRuleStore createGroundRuleStore() {
@@ -139,7 +139,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
     /**
      * Complete the initialization process.
-     * Most of the infrastructure will have been constructed.
+     * Most of the infrastructure will have been constructued.
      * The child is responsible for constructing the AtomManager
      * and populating the ground rule store.
      */
@@ -265,7 +265,7 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         rules = null;
-        database = null;
+        db = null;
     }
 
     /**
@@ -336,7 +336,7 @@ public abstract class InferenceApplication implements ModelApplication {
      * Construct an inference application given the data.
      * Look for a constructor like: (List<Rule>, Database).
      */
-    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database database) {
+    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database db) {
         className = Reflection.resolveClassName(className);
 
         Class<? extends InferenceApplication> classObject = null;
@@ -352,12 +352,12 @@ public abstract class InferenceApplication implements ModelApplication {
         try {
             constructor = classObject.getConstructor(List.class, Database.class);
         } catch (NoSuchMethodException ex) {
-            throw new IllegalArgumentException("No suitable constructor (List<Rules>, Database) found for inference application: " + className + ".", ex);
+            throw new IllegalArgumentException("No sutible constructor (List<Rules>, Database) found for inference application: " + className + ".", ex);
         }
 
         InferenceApplication inferenceApplication = null;
         try {
-            inferenceApplication = constructor.newInstance(rules, database);
+            inferenceApplication = constructor.newInstance(rules, db);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate inference application (" + className + ")", ex);
         } catch (IllegalAccessException ex) {

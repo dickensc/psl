@@ -20,13 +20,11 @@ package org.linqs.psl.model.term;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 
-import java.io.Serializable;
-
 /**
  * An argument to a {@link Predicate}.
  * All terms are immutable.
  */
-public interface Term extends Comparable<Term>, SummationVariableOrTerm, Serializable {
+public interface Term extends Comparable<Term>, SummationVariableOrTerm {
     public String toString();
 
     public int hashCode();

@@ -17,14 +17,13 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -41,9 +40,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
             boolean squared, boolean hinge,
-            Hyperplane<GroundAtom> hyperplane,
+            Hyperplane<RandomVariableAtom> hyperplane,
             float weight, float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
@@ -56,14 +55,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         constant = hyperplane.getConstant();
 
         variableIndexes = new int[size];
-        GroundAtom[] variables = hyperplane.getVariables();
+        RandomVariableAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
-    }
-
-    public int getVariableIndex(int i) {
-        return variableIndexes[i];
     }
 
     @Override
@@ -92,17 +87,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(int iteration, VariableTermStore termStore) {
+    public float minimize(int iteration, float[] variableValues) {
         float movement = 0.0f;
 
-        GroundAtom[] variableAtoms = termStore.getVariableAtoms();
-        float[] variableValues = termStore.getVariableValues();
-
         for (int i = 0 ; i < size; i++) {
-            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
-                continue;
-            }
-
             float dot = dot(variableValues);
             float gradient = computeGradient(i, dot);
             float gradientStep = gradient * (learningRate / iteration);
@@ -200,7 +188,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return toString(null);
     }
 
-    public String toString(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
+    public String toString(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
         // weight * [max(coeffs^T * x - constant, 0.0)]^2
 
         StringBuilder builder = new StringBuilder();

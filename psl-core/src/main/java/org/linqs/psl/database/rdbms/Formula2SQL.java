@@ -35,6 +35,7 @@ import org.linqs.psl.model.term.Variable;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
+import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 
@@ -71,7 +72,7 @@ public class Formula2SQL {
     private final Map<Variable, Integer> projectionMap;
 
     private final List<Integer> partitions;
-    private final List<Atom> partialTargets;
+    private final Atom lazyTarget;
 
     private int tableCounter;
 
@@ -98,16 +99,15 @@ public class Formula2SQL {
 
     /**
      * See above description.
-
-     * @param partialTargets if this is non-null, then this formula will be treated as a partial grounding query.
-     * This means that we will treat special partitions (with a negative id) as valid partitions,
-     * and these atoms will be exclusively drawn from the special partitions.
-     * We will do a DIRECT REFERENCE comparison against atoms in the formula to check for this specific one.
+     * @param lazyTarget if this is non-null, then this formula will be treated as a partial grounding query.
+     *  This means that we will treat Partition.LAZY_PARTITION_ID as a valid partition, and this atom
+     *  will be exclusivley drawn from Partition.LAZY_PARTITION_ID.
+     *  We will do a DIRECT REFERENCE comparison against atoms in the formual to check for this specific one.
      */
-    public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct, List<Atom> partialTargets) {
+    public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct, Atom lazyTarget) {
         this.projection = projection;
         this.database = database;
-        this.partialTargets = partialTargets;
+        this.lazyTarget = lazyTarget;
 
         joins = new HashMap<Variable, String>();
         tableAliases = new HashMap<Atom, String>();
@@ -122,12 +122,16 @@ public class Formula2SQL {
             query.addAllColumns();
         }
 
-        // Query all of the read (and the write) partition(s) belonging to the database.
+        // Query all of the read (and the write) partition(s) belonging to the database
         partitions = new ArrayList<Integer>(database.getReadPartitions().size() + 1);
         for (Partition partition : database.getReadPartitions()) {
             partitions.add(partition.getID());
         }
         partitions.add(database.getWritePartition().getID());
+
+        if (lazyTarget != null) {
+            partitions.add(Partition.LAZY_PARTITION_ID);
+        }
     }
 
     public List<Atom> getFunctionalAtoms() {
@@ -268,10 +272,10 @@ public class Formula2SQL {
         }
 
         // Make sure to limit the partitions.
-        // Most atoms get to choose from anywhere, partial atoms can only come from the special partitions.
+        // Most atoms get to choose from anywhere, lazy atoms can only come from the lazy partition.
         CustomSql partitionColumn = new CustomSql(tableAlias + "." + PredicateInfo.PARTITION_COLUMN_NAME);
-        if ((partialTargets != null) && (partialTargets.contains(atom))) {
-            query.addCondition(BinaryCondition.lessThan(partitionColumn, 0));
+        if (atom == lazyTarget) {
+            query.addCondition(BinaryCondition.equalTo(partitionColumn, Partition.LAZY_PARTITION_ID));
         } else {
             query.addCondition(new InCondition(partitionColumn, partitions));
         }
@@ -280,7 +284,7 @@ public class Formula2SQL {
     }
 
     /**
-     * Recursively traverse a formula to build a query from it.
+     * Recursively traverse a formual to build a query from it.
      */
     private void traverse(Formula formula) {
         if (formula instanceof Conjunction) {

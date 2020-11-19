@@ -20,9 +20,9 @@ package org.linqs.psl.reasoner.term.streaming;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -34,22 +34,22 @@ import java.util.List;
 
 /**
  * Iterate over all the terms that come up from grounding.
- * This will typically be the first iteration, we will build the term cache up from ground rules
+ * On this first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public abstract class StreamingGroundingIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
+public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
     // How much to over-allocate by.
     public static final double OVERALLOCATION_RATIO = 1.25;
 
     protected StreamingTermStore<T> parentStore;
-    protected HyperplaneTermGenerator<T, GroundAtom> termGenerator;
+    protected HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator;
     protected AtomManager atomManager;
 
-    protected List<Rule> rules;
+    protected List<WeightedRule> rules;
     protected int currentRule;
 
     // Because arithmetic rules can create multiple groundings per query result,
-    // we have to keep track of those and make sure they get returned.
+    // we have to keep track of doubles and make sure they get returned.
     protected List<GroundRule> pendingGroundRules;
 
     protected List<T> termCache;
@@ -69,23 +69,14 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected T nextTerm;
 
     protected int pageSize;
-    protected int nextPage;
+    protected int numPages;
 
-    public StreamingGroundingIterator(
-            StreamingTermStore<T> parentStore, List<Rule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
+    public StreamingInitialRoundIterator(
+            StreamingTermStore<T> parentStore, List<WeightedRule> rules,
+            AtomManager atomManager, HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator,
             List<T> termCache, List<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {
-        this(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, 0);
-    }
-
-    public StreamingGroundingIterator(
-            StreamingTermStore<T> parentStore, List<Rule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
-            List<T> termCache, List<T> termPool,
-            ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize, int nextPage) {
         this.parentStore = parentStore;
         this.termGenerator = termGenerator;
         this.atomManager = atomManager;
@@ -96,15 +87,18 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         pendingGroundRules = new ArrayList<GroundRule>();
 
         this.termCache = termCache;
+        this.termCache.clear();
+
         this.termPool = termPool;
+        this.termPool.clear();
 
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
 
         this.pageSize = pageSize;
-        this.nextPage = nextPage;
+        numPages = 0;
 
-        termCount = 0l;
+        termCount = 0;
 
         queryIterable = null;
         queryResults = null;
@@ -188,8 +182,8 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
         termCache.add(term);
 
-        // Set aside terms for later reuse in the cache iterators.
-        if (termCache.size() > termPool.size()) {
+        // If we are on the first page, set aside the term for reuse.
+        if (numPages == 0) {
             termPool.add(term);
         }
 
@@ -225,34 +219,25 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         }
 
         // Start grounding the next rule.
-        startGroundingQuery();
+        queryIterable = ((RDBMSDatabase)atomManager.getDatabase()).executeQueryIterator(rules.get(currentRule).getGroundingQuery(atomManager));
+        queryResults = queryIterable.iterator();
 
         return fetchNextGroundRule();
     }
 
-    /**
-     * Start the next grounding query (on |currentRule|) and setup all the required infrastructure.
-     * This method should not advance |currentRule|,
-     * but just set the queryIterable/queryResults to null if this rule cannot be grounded.
-     */
-    protected void startGroundingQuery() {
-        queryIterable = ((RDBMSDatabase)atomManager.getDatabase()).executeQueryIterator(rules.get(currentRule).getGroundingQuery(atomManager));
-        queryResults = queryIterable.iterator();
-    }
-
     private void flushCache() {
-        // It is possible to get two flush requests in a row, so check to see if we actually need it.
+        // If is possible to get two flush requests in a row, so check to see if we actually need it.
         if (termCache.size() == 0) {
             return;
         }
 
-        String termPagePath = parentStore.getTermPagePath(nextPage);
-        String volatilePagePath = parentStore.getVolatilePagePath(nextPage);
+        String termPagePath = parentStore.getTermPagePath(numPages);
+        String volatilePagePath = parentStore.getVolatilePagePath(numPages);
 
         writeFullPage(termPagePath, volatilePagePath);
 
         // Move on to the next page.
-        nextPage++;
+        numPages++;
     }
 
     @Override
@@ -270,11 +255,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             queryResults = null;
         }
 
-        // All the terms have been iterated over and the volitile buffer has been flushed,
-        // the term cache is now invalid.
-        termCache.clear();
-
-        parentStore.groundingIterationComplete(termCount, nextPage, termBuffer, volatileBuffer);
+        parentStore.initialIterationComplete(termCount, numPages, termBuffer, volatileBuffer);
     }
 
     /**

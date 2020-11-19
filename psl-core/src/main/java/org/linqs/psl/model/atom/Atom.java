@@ -287,18 +287,17 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        Predicate p = GroundingOnlyPredicate.NotEqual;
         if (predicate instanceof GroundingOnlyPredicate)  {
             s.append("(");
-            if (predicate.equals(GroundingOnlyPredicate.NotEqual)) {
+            if (predicate == GroundingOnlyPredicate.NotEqual) {
                 s.append(arguments[0]);
                 s.append(" != ");
                 s.append(arguments[1]);
-            } else if (predicate.equals(GroundingOnlyPredicate.Equal)) {
+            } else if (predicate == GroundingOnlyPredicate.Equal) {
                 s.append(arguments[0]);
                 s.append(" == ");
                 s.append(arguments[1]);
-            } else if (predicate.equals(GroundingOnlyPredicate.NonSymmetric)) {
+            } else if (predicate == GroundingOnlyPredicate.NonSymmetric) {
                 s.append(arguments[0]);
                 s.append(" % ");
                 s.append(arguments[1]);

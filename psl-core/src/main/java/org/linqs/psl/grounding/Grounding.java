@@ -98,7 +98,7 @@ public class Grounding {
                 continue;
             }
 
-            Formula query = rule.getRewritableGroundingFormula();
+            Formula query = rule.getRewritableGroundingFormula(atomManager);
             if (rewrite) {
                 query = rewriter.rewrite(query, (RDBMSDataStore)dataStore);
             }

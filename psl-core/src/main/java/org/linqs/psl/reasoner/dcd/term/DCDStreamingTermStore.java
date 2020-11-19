@@ -37,16 +37,12 @@ import java.util.Set;
  * So interrupting the iteration can cause the term count to be incorrect.
  */
 public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> {
-    public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager, DCDTermGenerator dcdTermGenerator) {
-        super(rules, atomManager, dcdTermGenerator);
+    public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
+        super(rules, atomManager, new DCDTermGenerator());
     }
 
     @Override
-    protected boolean supportsRule(Rule rule, boolean warnRules) {
-        if (!super.supportsRule(rule, warnRules)) {
-            return false;
-        }
-
+    protected boolean supportsRule(Rule rule) {
         // Don't allow explicit priors.
         if (rule instanceof WeightedLogicalRule) {
             Set<Atom> atomSet = ((WeightedLogicalRule)rule).getFormula().getAtoms(new HashSet<Atom>());
@@ -64,10 +60,10 @@ public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> 
     }
 
     @Override
-    protected StreamingIterator<DCDObjectiveTerm> getGroundingIterator() {
-        return new DCDStreamingGroundingIterator(
+    protected StreamingIterator<DCDObjectiveTerm> getInitialRoundIterator() {
+        return new DCDStreamingInitialRoundIterator(
                 this, rules, atomManager, termGenerator,
-                termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
+                termCache, termPool, termBuffer, volatileBuffer, pageSize);
     }
 
     @Override

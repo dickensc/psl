@@ -21,15 +21,20 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.util.IteratorUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -56,14 +61,14 @@ public class PersistedAtomManager extends AtomManager {
      */
     private InitialValue initialValueOnIllegalAccess;
 
-    protected int persistedAtomCount;
+    private int persistedAtomCount;
 
-    public PersistedAtomManager(Database database) {
-        this(database, false);
+    public PersistedAtomManager(Database db) {
+        this(db, false);
     }
 
-    public PersistedAtomManager(Database database, boolean prebuiltCache) {
-        this(database, prebuiltCache, InitialValue.ATOM);
+    public PersistedAtomManager(Database db, boolean prebuiltCache) {
+        this(db, prebuiltCache, InitialValue.ATOM);
     }
 
     /**
@@ -71,8 +76,8 @@ public class PersistedAtomManager extends AtomManager {
      * @param prebuiltCache the database already has a populated atom cache, no need to build it again.
      * @param initialValueOnIllegalAccess the initial value to give an atom accessed illegally.
      */
-    public PersistedAtomManager(Database database, boolean prebuiltCache, InitialValue initialValueOnIllegalAccess) {
-        super(database);
+    public PersistedAtomManager(Database db, boolean prebuiltCache, InitialValue initialValueOnIllegalAccess) {
+        super(db);
 
         throwOnIllegalAccess = Options.PAM_THROW_ACCESS_EXCEPTION.getBoolean();
         warnOnIllegalAccess = !throwOnIllegalAccess;
@@ -80,7 +85,7 @@ public class PersistedAtomManager extends AtomManager {
         this.initialValueOnIllegalAccess = initialValueOnIllegalAccess;
 
         if (prebuiltCache) {
-            persistedAtomCount = database.getCachedRVACount();
+            persistedAtomCount = db.getCachedRVACount();
         } else {
             buildPersistedAtomCache();
         }
@@ -90,25 +95,25 @@ public class PersistedAtomManager extends AtomManager {
         persistedAtomCount = 0;
 
         // Iterate through all of the registered predicates in this database
-        for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
+        for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
             // Ignore any closed predicates, they will not return RandomVariableAtoms
-            if (database.isClosed(predicate)) {
+            if (db.isClosed(predicate)) {
                 // Make the database cache all the atoms from the closed predicates,
                 // but don't do anything with them now.
-                database.getAllGroundAtoms(predicate);
+                db.getAllGroundAtoms(predicate);
 
                 continue;
             }
 
             // First pull all the random variable atoms and mark them as persisted.
-            for (RandomVariableAtom atom : database.getAllGroundRandomVariableAtoms(predicate)) {
+            for (RandomVariableAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
                 atom.setPersisted(true);
                 persistedAtomCount++;
             }
 
             // Now pull all the observed atoms so they will get cached.
             // This will throw if any observed atoms were previously seen as RVAs.
-            database.getAllGroundObservedAtoms(predicate);
+            db.getAllGroundObservedAtoms(predicate);
         }
     }
 
@@ -116,7 +121,7 @@ public class PersistedAtomManager extends AtomManager {
     // then they will be responsible for synchronization.
     @Override
     public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-        GroundAtom atom = database.getAtom(predicate, arguments);
+        GroundAtom atom = db.getAtom(predicate, arguments);
         if (!(atom instanceof RandomVariableAtom)) {
             return atom;
         }
@@ -142,7 +147,7 @@ public class PersistedAtomManager extends AtomManager {
      * Commit all the atoms in this manager's persisted cache.
      */
     public void commitPersistedAtoms() {
-        database.commitCachedAtoms(true);
+        db.commitCachedAtoms(true);
     }
 
     public int getPersistedCount() {
@@ -150,7 +155,7 @@ public class PersistedAtomManager extends AtomManager {
     }
 
     public Iterable<RandomVariableAtom> getPersistedRVAtoms() {
-        return IteratorUtils.filter(database.getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+        return IteratorUtils.filter(db.getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
             @Override
             public boolean keep(RandomVariableAtom atom) {
                 return atom.getPersisted();
@@ -160,14 +165,10 @@ public class PersistedAtomManager extends AtomManager {
 
     protected void addToPersistedCache(Set<RandomVariableAtom> atoms) {
         for (RandomVariableAtom atom : atoms) {
-            addToPersistedCache(atom);
-        }
-    }
-
-    protected void addToPersistedCache(RandomVariableAtom atom) {
-        if (!atom.getPersisted()) {
-            atom.setPersisted(true);
-            persistedAtomCount++;
+            if (!atom.getPersisted()) {
+                atom.setPersisted(true);
+                persistedAtomCount++;
+            }
         }
     }
 
@@ -195,7 +196,7 @@ public class PersistedAtomManager extends AtomManager {
         public RandomVariableAtom atom;
 
         public PersistedAccessException(RandomVariableAtom atom) {
-            super("Can only call getVariable() on persisted RandomVariableAtoms (RVAs)" +
+            super("Can only call getAtom() on persisted RandomVariableAtoms (RVAs)" +
                     " using a PersistedAtomManager." +
                     " Cannot access " + atom + "." +
                     " This typically means that provided data is insufficient." +

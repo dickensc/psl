@@ -24,7 +24,6 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,7 @@ import java.util.Map;
  * A Rule is responsible for instantiating GroundRules.
  * A Rule must instantiate only WeightedGroundRules or only UnweightedGroundRules.
  */
-public interface Rule extends Serializable {
+public interface Rule {
     /**
      * Adds all GroundRules to a GroundRuleStore using the AtomManager
      * to instantiate ground atoms.
@@ -62,7 +61,7 @@ public interface Rule extends Serializable {
      * Get a grounding formual that can be rewritten.
      * Should throw if supportsGroundingQueryRewriting() == false.
      */
-    public Formula getRewritableGroundingFormula();
+    public Formula getRewritableGroundingFormula(AtomManager atomManager);
 
     /**
      * Does this rule support grounding out single instances at a time.

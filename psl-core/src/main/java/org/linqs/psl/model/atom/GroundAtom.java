@@ -17,18 +17,24 @@
  */
 package org.linqs.psl.model.atom;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionTerm;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Set;
 
 /**
- * An Atom with only constants for arguments (no variables).
+ * An Atom with only {@link Constant GroundTerms} for arguments.
  *
  * A GroundAtom has a truth value.
  */
-public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm, ReasonerLocalVariable {
+public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm {
     protected float value;
 
     protected GroundAtom(Predicate predicate, Constant[] args, float value) {
@@ -41,6 +47,9 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         return (Constant[])arguments;
     }
 
+    /**
+     * @return the truth value of this Atom
+     */
     @Override
     public float getValue() {
         return value;

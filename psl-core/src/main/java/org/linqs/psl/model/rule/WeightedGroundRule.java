@@ -38,14 +38,7 @@ public interface WeightedGroundRule extends GroundRule {
      */
     public void setWeight(float weight);
 
-    /**
-     * Get a mathematical/functional definition of this ground rule.
-     *
-     * If |mergeConstants| is true, then don't merge together constant terms (like observed atoms).
-     * Merging terms is generally encouraged, but certain inference methods (like online inference)
-     * may need direct access to these terms.
-     */
-    public GeneralFunction getFunctionDefinition(boolean mergeConstants);
+    public GeneralFunction getFunctionDefinition();
 
     /**
      * Returns the incompatibility of the truth values of this GroundRule's GroundAtoms.

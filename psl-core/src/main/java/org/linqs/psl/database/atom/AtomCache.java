@@ -50,7 +50,6 @@ public class AtomCache {
 
     // The number of random variable atoms that have been instantiated.
     private int rvaCount;
-    private int obsCount;
 
     /**
      * Constructs a new AtomCache for a Database.
@@ -61,7 +60,6 @@ public class AtomCache {
         this.db = db;
         this.cache = new HashMap<QueryAtom, GroundAtom>();
         this.rvaCount = 0;
-        this.obsCount = 0;
     }
 
     /**
@@ -84,10 +82,6 @@ public class AtomCache {
 
     public int getRVACount() {
         return rvaCount;
-    }
-
-    public int getObsCount() {
-        return obsCount;
     }
 
     /**
@@ -116,8 +110,6 @@ public class AtomCache {
 
             if (atom instanceof RandomVariableAtom) {
                 rvaCount--;
-            } else if (atom instanceof ObservedAtom) {
-                obsCount--;
             }
 
             return true;
@@ -144,8 +136,8 @@ public class AtomCache {
      * Instantiates an ObservedAtom and stores it in this AtomCache.
      *
      * This method should only be called by this AtomCache's {@link Database}.
-     * To retrieve a GroundAtom, all others should use Database.getVariable()
-     * or AtomManager.getVariable().
+     * To retrieve a GroundAtom, all others should use Database.getAtom()
+     * or AtomManager.getAtom().
      *
      * Further, this method should only be called after ensuring that the Atom
      * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
@@ -170,7 +162,6 @@ public class AtomCache {
 
         ObservedAtom atom = new ObservedAtom(predicate, args, value);
         cache.put(key, atom);
-        obsCount++;
 
         return atom;
     }
@@ -179,8 +170,8 @@ public class AtomCache {
      * Instantiates a RandomVariableAtom and stores it in this AtomCache.
      *
      * This method should only be called by this AtomCache's {@link Database}.
-     * To retrieve a GroundAtom, all others should use Database.getVariable()
-     * or AtomManager.getVariable().
+     * To retrieve a GroundAtom, all others should use Database.getAtom()
+     * or AtomManager.getAtom().
      *
      * Further, this method should only be called after ensuring that the Atom
      * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.

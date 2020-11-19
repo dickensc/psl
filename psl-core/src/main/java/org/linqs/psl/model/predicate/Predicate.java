@@ -20,11 +20,7 @@ package org.linqs.psl.model.predicate;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Term;
-import org.linqs.psl.util.HashCode;
 
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,12 +30,11 @@ import java.util.Map;
  * Predicates cannot be constructed directly.
  * Instead, they are constructed via the appropriate gegetthod in each subclass.
  */
-public abstract class Predicate implements Serializable {
+public abstract class Predicate {
     private static Map<String, Predicate> predicates = new HashMap<String, Predicate>();
 
     private final String name;
     private final ConstantType[] types;
-    private final int hashcode;
 
     protected Predicate(String name, ConstantType[] types) {
         this(name, types, true);
@@ -64,9 +59,6 @@ public abstract class Predicate implements Serializable {
         if (predicates.containsKey(this.name)) {
             throw new RuntimeException("Predicate with name '" + name + "' already exists.");
         }
-
-        hashcode = HashCode.build(HashCode.build(name), types);
-
         predicates.put(this.name, this);
     }
 
@@ -113,32 +105,6 @@ public abstract class Predicate implements Serializable {
 
     public static Predicate get(String name)  {
         return predicates.get(name.toUpperCase());
-    }
-
-    public static Collection<Predicate> getAll() {
-        return predicates.values();
-    }
-
-    @Override
-    public int hashCode() {
-        return hashcode;
-    }
-
-    @Override
-    public boolean equals(Object oth) {
-        if (oth == this) {
-            return true;
-        }
-
-        if (!(oth instanceof Predicate)) {
-            return false;
-        }
-
-        Predicate other = (Predicate)oth;
-
-        // First check the hashcode to reduce the time we have to do a deepEquals() on the arguments.
-        // Note that the hashcode is not perfect, but provides a quick insurance on inequality.
-        return hashCode() == other.hashCode() && name.equals(other.name) && Arrays.deepEquals(types, other.types);
     }
 
     /**
