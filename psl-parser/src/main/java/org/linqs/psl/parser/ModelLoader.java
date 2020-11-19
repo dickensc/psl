@@ -17,9 +17,9 @@
  */
 package org.linqs.psl.parser;
 
-import org.linqs.psl.database.DataStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;
@@ -119,7 +119,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     /**
      * Parse a string into either a full PSL Rule or a rule without weight or potential squaring information.
      */
-    public static RulePartial loadRulePartial(DataStore data, String input) {
+    public static RulePartial loadRulePartial(String input) {
         PSLParser parser = null;
         try {
             parser = getParser(input);
@@ -136,7 +136,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             throw (RuntimeException)ex.getCause();
         }
 
-        ModelLoader visitor = new ModelLoader(data);
+        ModelLoader visitor = new ModelLoader();
         return visitor.visitPslRulePartial(context);
     }
 
@@ -144,8 +144,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
      * Parse and return a single rule.
      * If exactly one rule is not specified, an exception is thrown.
      */
-    public static Rule loadRule(DataStore data, String input) {
-        Model model = load(data, new StringReader(input));
+    public static Rule loadRule(String input) {
+        Model model = load(new StringReader(input));
 
         int ruleCount = 0;
         Rule targetRule = null;
@@ -167,8 +167,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     /**
      * Convenience interface to load().
      */
-    public static Model load(DataStore data, String input) {
-        return load(data, new StringReader(input));
+    public static Model load(String input) {
+        return load(new StringReader(input));
     }
 
     /**
@@ -176,7 +176,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
      * The input should only contain rules and the DataStore should contain all the predicates
      * used by the rules.
      */
-    public static Model load(DataStore data, Reader input) {
+    public static Model load(Reader input) {
         PSLParser parser = null;
         try {
             parser = getParser(input);
@@ -193,8 +193,33 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             throw (RuntimeException)ex.getCause();
         }
 
-        ModelLoader visitor = new ModelLoader(data);
+        ModelLoader visitor = new ModelLoader();
         return visitor.visitProgram(program, parser);
+    }
+
+    static Atom loadAtom(String input) {
+        return loadAtom(new StringReader(input));
+    }
+
+    static Atom loadAtom(Reader input) {
+        PSLParser parser = null;
+        try {
+            parser = getParser(input);
+        } catch (IOException ex) {
+            // Cancel the lex and rethrow.
+            throw new RuntimeException("Failed to lex atom.", ex);
+        }
+
+        AtomContext atomContext = null;
+        try {
+            atomContext = parser.atom();
+        } catch (ParseCancellationException ex) {
+            // Cancel the parse and rethrow the cause.
+            throw (RuntimeException)ex.getCause();
+        }
+
+        ModelLoader visitor = new ModelLoader();
+        return visitor.visitAtom(atomContext);
     }
 
     /**
@@ -228,13 +253,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
         return getParser(new StringReader(input));
     }
 
-    // Non-static
-
-    private final DataStore data;
-
-    private ModelLoader(DataStore data) {
-        this.data = data;
-    }
+    ModelLoader() {}
 
     public Model visitProgram(ProgramContext ctx, PSLParser parser) {
         Model model = new Model();

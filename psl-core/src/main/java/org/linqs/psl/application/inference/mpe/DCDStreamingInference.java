@@ -18,12 +18,12 @@
 package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDStreamingTermStore;
+import org.linqs.psl.reasoner.dcd.term.DCDTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -33,8 +33,8 @@ import java.util.List;
  * Use streaming grounding and inference with a DCD reasoner.
  */
 public class DCDStreamingInference extends MPEInference {
-    public DCDStreamingInference(List<Rule> rules, Database db) {
-        super(rules, db, true);
+    public DCDStreamingInference(List<Rule> rules, Database database) {
+        super(rules, database, true);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class DCDStreamingInference extends MPEInference {
 
     @Override
     protected TermStore createTermStore() {
-        return new DCDStreamingTermStore(rules, atomManager);
+        return new DCDStreamingTermStore(rules, atomManager, (DCDTermGenerator)termGenerator);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class DCDStreamingInference extends MPEInference {
 
     @Override
     protected TermGenerator createTermGenerator() {
-        return null;
+        return new DCDTermGenerator();
     }
 
     @Override
@@ -66,7 +66,7 @@ public class DCDStreamingInference extends MPEInference {
         reasoner = null;
 
         rules = null;
-        db = null;
+        database = null;
     }
 
     @Override

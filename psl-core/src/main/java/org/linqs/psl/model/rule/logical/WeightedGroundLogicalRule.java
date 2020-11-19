@@ -56,8 +56,17 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition() {
-        return dissatisfaction;
+    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
+        // We have already built the function for this ground rule by merging constants.
+        // If we want that one, return it right away.
+        if (mergeConstants) {
+            return dissatisfaction;
+        }
+
+        GeneralFunction function = getFunction(false);
+        function.setSquared(((WeightedLogicalRule)rule).isSquared());
+
+        return function;
     }
 
     @Override

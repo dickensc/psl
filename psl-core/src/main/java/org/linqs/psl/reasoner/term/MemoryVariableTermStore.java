@@ -18,22 +18,18 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.term.MemoryTermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -86,6 +82,11 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
+    public GroundAtom[] getVariableAtoms() {
+        return variableAtoms;
+    }
+
+    @Override
     public void syncAtoms() {
         for (int i = 0; i < variables.size(); i++) {
             variableAtoms[i].setValue(variableValues[i]);
@@ -98,20 +99,34 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
+    public int getNumRandomVariables() {
+        return getNumVariables();
+    }
+
+    @Override
+    public int getNumObservedVariables() {
+        return 0;
+    }
+
+    @Override
     public boolean isLoaded() {
         return true;
     }
 
     @Override
-    public synchronized V createLocalVariable(RandomVariableAtom atom) {
-        V variable = convertAtomToVariable(atom);
+    public synchronized V createLocalVariable(GroundAtom groundAtom) {
+        if (!(groundAtom instanceof RandomVariableAtom)) {
+            throw new IllegalArgumentException("MemoryVariableTermStores do not keep track of observed atoms (" + groundAtom + ").");
+        }
 
+        RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
+
+        V variable = convertAtomToVariable(atom);
         if (variables.containsKey(variable)) {
             return variable;
         }
 
         // Got a new variable.
-
         if (variables.size() >= variableAtoms.length) {
             ensureVariableCapacity(variables.size() * 2);
         }

@@ -46,6 +46,25 @@ import java.util.List;
  * The main() method will collect all the options and write them out to stdout as JSON.
  */
 public class Options {
+    public static final Option ONLINE_HOST = new Option(
+        "inference.onlinehostname",
+        "127.0.0.1",
+        "The hostname for the online server."
+    );
+
+    public static final Option ONLINE_PORT_NUMBER = new Option(
+        "inference.onlineportnumber",
+        56734,
+        "The port number for the online server."
+    );
+
+    public static final Option ONLINE_READ_PARTITION = new Option(
+        "onlineatommanager.read",
+        -1,
+        "The partition to add new observations to."
+        + " If negative, the first read partition in the database will be used."
+    );
+
     public static final Option ADMM_COMPUTE_PERIOD = new Option(
         "admmreasoner.computeperiod",
         50,
@@ -511,6 +530,14 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option PARTIAL_GROUNDING_POWERSET = new Option(
+        "partialgrounding.powerset",
+        false,
+        "Whether or not to iterate over the powerset of partial targets during a partial grounding."
+        + " If true the partial grounding will result in no regret in the inference. "
+        + " If false an approximation will be made such that only one atom in a ground rule can come from a special partition."
+    );
+
     public static final Option PAM_THROW_ACCESS_EXCEPTION = new Option(
         "persistedatommanager.throwaccessexception",
         true,
@@ -640,7 +667,7 @@ public class Options {
     public static final Option REASONER_TOLERANCE = new Option(
         "reasoner.tolerance",
         1e-5f,
-        "How close towo objective values need to be to be considered the same.",
+        "How close two objective values need to be to be considered the same.",
         Option.FLAG_NON_NEGATIVE
     );
 

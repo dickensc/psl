@@ -23,6 +23,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -32,8 +33,8 @@ import java.util.List;
  * Use streaming grounding and inference with an SGD reasoner.
  */
 public class SGDStreamingInference extends MPEInference {
-    public SGDStreamingInference(List<Rule> rules, Database db) {
-        super(rules, db, true);
+    public SGDStreamingInference(List<Rule> rules, Database database) {
+        super(rules, database, true);
     }
 
     @Override
@@ -43,7 +44,7 @@ public class SGDStreamingInference extends MPEInference {
 
     @Override
     protected TermStore createTermStore() {
-        return new SGDStreamingTermStore(rules, atomManager);
+        return new SGDStreamingTermStore(rules, atomManager, (SGDTermGenerator)termGenerator);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class SGDStreamingInference extends MPEInference {
 
     @Override
     protected TermGenerator createTermGenerator() {
-        return null;
+        return new SGDTermGenerator();
     }
 
     @Override
@@ -65,7 +66,7 @@ public class SGDStreamingInference extends MPEInference {
         reasoner = null;
 
         rules = null;
-        db = null;
+        database = null;
     }
 
     @Override

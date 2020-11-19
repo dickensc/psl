@@ -19,7 +19,6 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -31,13 +30,11 @@ import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.Reflection;
@@ -55,17 +52,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Launches PSL from the command line.
@@ -211,60 +199,20 @@ public class Launcher {
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
+        inferenceApplication.close();
         log.info("Inference Complete");
 
         // Output the results.
-        outputResults(database, dataStore, closedPredicates);
+        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
+            log.trace("Writing inferred predicates to out stream.");
+            database.outputRandomVariableAtoms();
+        } else {
+            String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
+            log.info("Writing inferred predicates to file: " + outputDirectoryPath);
+            database.outputRandomVariableAtoms(outputDirectoryPath);
+        }
 
         return database;
-    }
-
-    private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-        // Set of open predicates
-        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-        openPredicates.removeAll(closedPredicates);
-
-        // If we are just writing to the console, use a more human-readable format.
-        if (!parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR)) {
-            for (StandardPredicate openPredicate : openPredicates) {
-                for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    System.out.println(atom.toString() + " = " + atom.getValue());
-                }
-            }
-
-            return;
-        }
-
-        // If we have an output directory, then write a different file for each predicate.
-        String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
-        File outputDirectory = new File(outputDirectoryPath);
-
-        // mkdir -p
-        outputDirectory.mkdirs();
-
-        for (StandardPredicate openPredicate : openPredicates) {
-            try {
-                FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
-                StringBuilder row = new StringBuilder();
-
-                for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    row.setLength(0);
-
-                    for (Constant term : atom.getArguments()) {
-                        row.append(term.rawToString());
-                        row.append("\t");
-                    }
-                    row.append(Double.toString(atom.getValue()));
-                    row.append("\n");
-
-                    predFileWriter.write(row.toString());
-                }
-
-                predFileWriter.close();
-            } catch (IOException ex) {
-                log.error("Exception writing predicate {}", openPredicate);
-            }
-        }
     }
 
     private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName) {
@@ -349,7 +297,7 @@ public class Launcher {
         Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
 
         for (StandardPredicate targetPredicate : openPredicates) {
-            // Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
+            // Before we run evaluation, ensure that the truth database actually has instances of the target predicate.
             if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
                 log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
                 continue;
@@ -365,13 +313,13 @@ public class Launcher {
         truthDatabase.close();
     }
 
-    private Model loadModel(DataStore dataStore) {
+    private Model loadModel() {
         log.info("Loading model from {}", parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
 
         Model model = null;
 
         try (FileReader reader = new FileReader(new File(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL)))) {
-            model = ModelLoader.load(dataStore, reader);
+            model = ModelLoader.load(reader);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to load model from file: " + parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL), ex);
         }
@@ -386,17 +334,14 @@ public class Launcher {
         return model;
     }
 
-    private void run() {
-        log.info("Running PSL CLI Version {}", Version.getFull());
-        DataStore dataStore = initDataStore();
+    private void runOnlineClient() {
+        log.info("Starting OnlinePSL client.");
+        OnlineClient.run(System.in, System.out);
+        log.info("OnlinePSL client closed.");
+    }
 
-        // Load data
-        Set<StandardPredicate> closedPredicates = loadData(dataStore);
-
-        // Load model
-        Model model = loadModel(dataStore);
-
-        // Inference
+    private void runPSL(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
+        // Run inference.
         Database evalDB = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
             evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
@@ -406,7 +351,7 @@ public class Launcher {
             throw new IllegalArgumentException("No valid operation provided.");
         }
 
-        // Evaluation
+        // Run evaluation.
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
             for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
                 evaluation(dataStore, evalDB, closedPredicates, evaluator);
@@ -418,8 +363,31 @@ public class Launcher {
         if (evalDB != null) {
             evalDB.close();
         }
+    }
 
-        dataStore.close();
+    private void run() {
+        DataStore dataStore = null;
+        Set<StandardPredicate> closedPredicates = null;
+        Model model = null;
+
+        log.info("Running PSL CLI Version {}", Version.getFull());
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
+            runOnlineClient();
+        } else {
+            dataStore = initDataStore();
+
+            // Load the data.
+            closedPredicates = loadData(dataStore);
+
+            // Load the model.
+            model = loadModel();
+
+            // Run PSL.
+            runPSL(model, dataStore, closedPredicates);
+
+            dataStore.close();
+        }
     }
 
     private static boolean isCommandLineValid(CommandLine givenOptions) {
@@ -429,7 +397,11 @@ public class Launcher {
             return false;
         }
 
-        // Data and model are required.
+        // Return early in case of OnlinePSL client.
+        if (givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
+            return true;
+        }
+
         // (We don't enforce them earlier so we can have successful runs with help and version.)
         HelpFormatter helpFormatter = new HelpFormatter();
         if (!givenOptions.hasOption(CommandLineLoader.OPTION_DATA)) {
@@ -443,7 +415,8 @@ public class Launcher {
             return false;
         }
 
-        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) && (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN))) {
+        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) &&
+                !givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
             System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPERATION_INFER_LONG, CommandLineLoader.OPERATION_INFER));
             helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;

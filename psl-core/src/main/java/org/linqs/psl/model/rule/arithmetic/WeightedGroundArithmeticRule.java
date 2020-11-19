@@ -70,9 +70,8 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition() {
-        GeneralFunction sum = new GeneralFunction(true, isSquared(),
-                coefficients.length, !(FunctionComparator.MI.equals(comparator)));
+    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
+        GeneralFunction sum = new GeneralFunction(false, false, coefficients.length, !(FunctionComparator.MI.equals(comparator)) && mergeConstants);
 
         float termSign = FunctionComparator.GTE.equals(comparator) ? -1.0f : 1.0f;
         for (int i = 0; i < coefficients.length; i++) {

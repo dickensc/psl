@@ -172,17 +172,17 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void commit(Iterable<RandomVariableAtom> atoms, int partitionId) {
+    public void commit(Iterable<? extends GroundAtom> atoms, int partitionId) {
         if (closed) {
             throw new IllegalStateException("Cannot commit on a closed database.");
         }
 
         // Split the atoms up by predicate.
-        Map<Predicate, List<RandomVariableAtom>> atomsByPredicate = new HashMap<Predicate, List<RandomVariableAtom>>();
+        Map<Predicate, List<GroundAtom>> atomsByPredicate = new HashMap<Predicate, List<GroundAtom>>();
 
-        for (RandomVariableAtom atom : atoms) {
+        for (GroundAtom atom : atoms) {
             if (!atomsByPredicate.containsKey(atom.getPredicate())) {
-                atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>());
+                atomsByPredicate.put(atom.getPredicate(), new ArrayList<GroundAtom>());
             }
 
             atomsByPredicate.get(atom.getPredicate()).add(atom);
@@ -190,12 +190,12 @@ public class RDBMSDatabase extends Database {
 
         try (Connection connection = getConnection()) {
             // Upsert each predicate batch.
-            for (Map.Entry<Predicate, List<RandomVariableAtom>> entry : atomsByPredicate.entrySet()) {
+            for (Map.Entry<Predicate, List<GroundAtom>> entry : atomsByPredicate.entrySet()) {
                 try (PreparedStatement statement = getAtomUpsert(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(entry.getKey()))) {
                     int batchSize = 0;
 
                     // Set all the upsert params.
-                    for (RandomVariableAtom atom : entry.getValue()) {
+                    for (GroundAtom atom : entry.getValue()) {
                         // Partition
                         statement.setInt(1, partitionId);
 
@@ -233,12 +233,12 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId) {
+    public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionID) {
         PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, writeID);
+            PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, newPartitionID);
         ) {
             statement.executeUpdate();
         } catch (SQLException ex) {
@@ -396,7 +396,7 @@ public class RDBMSDatabase extends Database {
     }
 
     private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
-        PreparedStatement statement = predicate.createDeleteStatement(connection, writeID);
+        PreparedStatement statement = predicate.createDeleteStatement(connection, allPartitionIDs);
 
         try {
             for (int i = 0; i < arguments.length; i++) {

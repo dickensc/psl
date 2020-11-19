@@ -24,6 +24,9 @@ import org.junit.After;
 import org.junit.Before;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,11 +39,16 @@ public abstract class CLITest {
     public static final String RESOURCES_BASE_FILE = ".resources";
     public static final String BASE_DATA_DIR_NAME = "data";
     public static final String BASE_MODELS_DIR_NAME = "models";
+    public static final String BASE_ONLINE_ACTIONS_DIR_NAME = "onlineActions";
+    public static final String SERVER_TEMP_FILE_NAME_PREFIX = "OnlinePSLServer";
+    public static final String SERVER_TEMP_FILE_NAME_SUFFIX = ".tmp";
 
     protected final String outDir;
     protected final String resourceDir;
     protected final String baseDataDir;
     protected final String baseModelsDir;
+    protected final String baseOnlineActionsDir;
+    protected final String serverTempFileDir;
 
     public CLITest() {
         outDir = Paths.get(System.getProperty("java.io.tmpdir"), PREFIX + "_" + this.getClass().getName()).toString();
@@ -48,6 +56,8 @@ public abstract class CLITest {
         resourceDir = (new File(this.getClass().getClassLoader().getResource(RESOURCES_BASE_FILE).getFile())).getParentFile().getAbsolutePath();
         baseDataDir = Paths.get(resourceDir, BASE_DATA_DIR_NAME).toString();
         baseModelsDir = Paths.get(resourceDir, BASE_MODELS_DIR_NAME).toString();
+        baseOnlineActionsDir = Paths.get(resourceDir, BASE_ONLINE_ACTIONS_DIR_NAME).toString();
+        serverTempFileDir= Paths.get(System.getProperty("java.io.tmpdir")).toString();
     }
 
     @Before
@@ -91,6 +101,115 @@ public abstract class CLITest {
         }
 
         Launcher.main(args.toArray(new String[0]), true);
+
+        validate();
+    }
+
+    public void runOnline(String modelPath, String dataPath, String actionPath) {
+        runOnline(modelPath, dataPath, actionPath, null);
+    }
+
+    public void runOnline(String modelPath, String dataPath, String actionPath, List<String> additionalArgs) {
+        runOnline(modelPath, dataPath, actionPath, "OFF", additionalArgs);
+    }
+
+    public void runOnline(String modelPath, String dataPath, String actionPath, String loggingLevel, List<String> additionalArgs) {
+        Thread serverThread = null;
+        Thread clientThread = null;
+        List<String> serverArgs = new ArrayList<String>();
+        List<String> clientArgs = new ArrayList<String>();
+        File actionFile = new File(actionPath);
+        File tempDir = null;
+        File[] tempDirFiles = null;
+        String serverTempFileName = null;
+
+        serverArgs.add("--" + CommandLineLoader.OPERATION_INFER_LONG);
+        serverArgs.add("SGDOnlineInference");
+
+        serverArgs.add("--" + CommandLineLoader.OPTION_MODEL_LONG);
+        serverArgs.add(modelPath);
+
+        serverArgs.add("--" + CommandLineLoader.OPTION_DATA_LONG);
+        serverArgs.add(dataPath);
+
+        serverArgs.add("--" + CommandLineLoader.OPTION_OUTPUT_DIR_LONG);
+        serverArgs.add(outDir);
+
+        // Set the logging level.
+        serverArgs.add("-" + CommandLineLoader.OPTION_PROPERTIES);
+        serverArgs.add("log4j.threshold=" + loggingLevel);
+
+        //Start server.
+        Runnable serverTask = () -> {
+            Launcher.main(serverArgs.toArray(new String[0]), true);
+        };
+
+        serverThread = new Thread(serverTask);
+        serverThread.start();
+
+        // Wait for .tmp file to drop.
+        boolean exists = false;
+        do {
+            tempDir = new File(serverTempFileDir);
+            tempDirFiles = tempDir.listFiles();
+
+            for (int i = 0; i < tempDirFiles.length; i++) {
+                if (tempDirFiles[i].isFile()) {
+                    serverTempFileName = tempDirFiles[i].getName();
+                    if(serverTempFileName.startsWith(SERVER_TEMP_FILE_NAME_PREFIX)
+                            && serverTempFileName.endsWith(SERVER_TEMP_FILE_NAME_SUFFIX)) {
+                        exists = true;
+                    }
+                }
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
+        } while (!exists);
+
+        // Start client.
+        clientArgs.add("--" + CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG);
+
+        clientArgs.add("--" + CommandLineLoader.OPTION_OUTPUT_DIR_LONG);
+        clientArgs.add(outDir);
+
+        // Set the logging level.
+        clientArgs.add("-" + CommandLineLoader.OPTION_PROPERTIES);
+        clientArgs.add("log4j.threshold=" + loggingLevel);
+
+        if (additionalArgs != null) {
+            clientArgs.addAll(additionalArgs);
+        }
+
+        Runnable clientTask = () -> {
+            try (
+                    InputStream clientInputStream = new FileInputStream(actionFile)) {
+                InputStream stdin = System.in;
+                System.setIn(clientInputStream);
+                Launcher.main(clientArgs.toArray(new String[0]), true);
+                System.setIn(stdin);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        };
+
+        clientThread = new Thread(clientTask);
+        clientThread.start();
+
+        try {
+            clientThread.join();
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        try {
+            serverThread.join();
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
 
         validate();
     }
