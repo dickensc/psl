@@ -43,7 +43,7 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
 
     @Override
     public ADMMObjectiveTerm createLossTerm(TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+            boolean isHinge, boolean isSquared, boolean isMutualInformation, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
         if (isHinge && isSquared) {
             return ADMMObjectiveTerm.createSquaredHingeLossTerm(hyperplane, groundRule);
         } else if (isHinge && !isSquared) {

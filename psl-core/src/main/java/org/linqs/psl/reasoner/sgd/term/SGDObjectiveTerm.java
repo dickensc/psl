@@ -19,12 +19,14 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -32,6 +34,7 @@ import java.nio.ByteBuffer;
 public class SGDObjectiveTerm implements ReasonerTerm  {
     private boolean squared;
     private boolean hinge;
+    private boolean mutualInformation;
 
     private float weight;
     private float constant;
@@ -42,11 +45,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private int[] variableIndexes;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
-            boolean squared, boolean hinge,
+            boolean squared, boolean hinge, boolean mutualInformation,
             Hyperplane<GroundAtom> hyperplane,
             float weight, float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
+        this.mutualInformation = mutualInformation;
 
         this.weight = weight;
         this.learningRate = learningRate;
@@ -94,23 +98,40 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      */
     public float minimize(int iteration, VariableTermStore termStore) {
         float movement = 0.0f;
+        Map<Constant, Float> attributeCount = new HashMap<Constant, Float>();
 
         GroundAtom[] variableAtoms = termStore.getVariableAtoms();
         float[] variableValues = termStore.getVariableValues();
 
-        for (int i = 0 ; i < size; i++) {
-            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
-                continue;
+        if (!mutualInformation) {
+            for (int i = 0; i < size; i++) {
+                if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+                    continue;
+                }
+
+                float dot = dot(variableValues);
+                float gradient = computeGradient(i, dot);
+                float gradientStep = gradient * (learningRate / iteration);
+
+                float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - gradientStep));
+                movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
+                variableValues[variableIndexes[i]] = newValue;
             }
-
-            float dot = dot(variableValues);
-            float gradient = computeGradient(i, dot);
-            float gradientStep = gradient * (learningRate / iteration);
-
-            float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - gradientStep));
-            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
-            variableValues[variableIndexes[i]] = newValue;
+        } else {
+            for (int i = 0; i < size; i++) {
+                if (coefficients[i] == -1) {
+                    // RHS Atom
+                    // TODO(Charles): Assumes second entry is attribute.
+                    if (attributeCount.containsKey(variableAtoms[variableIndexes[i]].getArguments()[1])) {
+                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1], 1.0f);
+                    } else {
+                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1],
+                                attributeCount.get(variableAtoms[variableIndexes[i]].getArguments()[1]) + 1.0f);
+                    }
+                }
+            }
         }
+
 
         return movement;
     }

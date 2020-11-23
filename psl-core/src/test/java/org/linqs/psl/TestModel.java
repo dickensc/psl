@@ -103,6 +103,7 @@ public class TestModel {
         predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueStringID});
         predicatesInfo.put("Person", new ConstantType[]{ConstantType.UniqueStringID});
         predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
+        predicatesInfo.put("Likes", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
 
         Map<String, StandardPredicate> predicates = new HashMap<String, StandardPredicate>();
         for (Map.Entry<String, ConstantType[]> predicateEntry : predicatesInfo.entrySet()) {
@@ -176,6 +177,20 @@ public class TestModel {
                 new PredicateData(0.0, new Object[]{"Eugene"})
             )));
         }
+
+        // Likes
+        observations.put(predicates.get("Likes"), new ArrayList<PredicateData>(Arrays.asList(
+                new PredicateData(1.0, new Object[]{"Alice", "Surfing"}),
+                new PredicateData(1.0, new Object[]{"Bob", "Surfing"}),
+                new PredicateData(1.0, new Object[]{"Charlie", "Surfing"}),
+                new PredicateData(0.0, new Object[]{"Derek", "Surfing"}),
+                new PredicateData(0.0, new Object[]{"Eugene", "Surfing"}),
+                new PredicateData(1.0, new Object[]{"Alice", "Reading"}),
+                new PredicateData(1.0, new Object[]{"Bob", "Reading"}),
+                new PredicateData(1.0, new Object[]{"Charlie", "Reading"}),
+                new PredicateData(1.0, new Object[]{"Derek", "Reading"}),
+                new PredicateData(1.0, new Object[]{"Eugene", "Reading"})
+        )));
 
         // Friends
         targets.put(predicates.get("Friends"), new ArrayList<PredicateData>(Arrays.asList(

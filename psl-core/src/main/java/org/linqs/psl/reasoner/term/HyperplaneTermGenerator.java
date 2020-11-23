@@ -26,6 +26,8 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.WeightedGroundArithmeticRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
@@ -113,7 +115,13 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             }
 
             // Non-negative functions have a hinge.
-            return createLossTerm(termStore, function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
+            if (groundRule instanceof WeightedGroundArithmeticRule) {
+                return createLossTerm(termStore, function.isNonNegative(), function.isSquared(),
+                        FunctionComparator.MI.equals(((WeightedGroundArithmeticRule)groundRule).getComparator()),
+                        groundRule, hyperplane);
+            } else {
+                return createLossTerm(termStore, function.isNonNegative(), function.isSquared(), false, groundRule, hyperplane);
+            }
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition(mergeConstants);
             GeneralFunction function = constraint.getFunction();
@@ -140,7 +148,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             float coefficient = (float)sum.getCoefficient(i);
             FunctionTerm term = sum.getTerm(i);
 
-            if ((term instanceof RandomVariableAtom) || (!mergeConstants && term instanceof ObservedAtom)) {
+            if ((term instanceof RandomVariableAtom) || (term instanceof ObservedAtom)) {
                 V localVariable = termStore.createLocalVariable((GroundAtom)term);
                 if (localVariable == null) {
                     throw new RuntimeException("Could not get local term for summand: " + sum + "[" + i + "] (" + term + ").");
@@ -193,7 +201,8 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * Non-hinge terms are linear combinations (ala arithmetic rules).
      * Non-squared terms are linear.
      */
-    public abstract T createLossTerm(TermStore<T, V> termStore, boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<V> hyperplane);
+    public abstract T createLossTerm(TermStore<T, V> termStore, boolean isHinge, boolean isSquared, boolean isMutualInformation,
+                                     GroundRule groundRule, Hyperplane<V> hyperplane);
 
     /**
      * Create a hard constraint term,

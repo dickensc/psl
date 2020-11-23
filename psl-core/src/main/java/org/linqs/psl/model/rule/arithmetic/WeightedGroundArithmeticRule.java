@@ -44,7 +44,8 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
             throw new IllegalArgumentException("WeightedGroundArithmeticRules do not support equality comparators. "
                     + "Create two ground rules instead, one with " + FunctionComparator.LTE + " and one with "
                     + FunctionComparator.GTE + ".");
-        } else if (!FunctionComparator.LTE.equals(comparator) && !FunctionComparator.GTE.equals(comparator)) {
+        } else if (!FunctionComparator.LTE.equals(comparator) && !FunctionComparator.GTE.equals(comparator)
+                && !FunctionComparator.MI.equals(comparator)) {
             throw new IllegalArgumentException("Unrecognized comparator: " + comparator);
         }
     }

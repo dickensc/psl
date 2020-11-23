@@ -71,6 +71,7 @@ public class AbstractArithmeticRuleTest {
     private StandardPredicate singleClosed;
     private StandardPredicate doubleClosed;
     private StandardPredicate singleOpened;
+    private StandardPredicate doubleOpened;
 
     @Before
     public void setup() {
@@ -84,6 +85,9 @@ public class AbstractArithmeticRuleTest {
 
         singleOpened = StandardPredicate.get("SingleOpened", ConstantType.UniqueStringID);
         dataStore.registerPredicate(singleOpened);
+
+        doubleOpened = StandardPredicate.get("DoubleOpened", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
+        dataStore.registerPredicate(doubleOpened);
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         toClose.add(singleClosed);
@@ -116,28 +120,25 @@ public class AbstractArithmeticRuleTest {
         assertEquals("1.0 * SINGLECLOSED(A) + 1.0 * SINGLECLOSED(B) = 1.0 .", rule.toString());
     }
 
-//    @Test
-//    public void testMultipleSumsDuplicates() {
-//        // SingleClosed(+A) + SingleClosed(+A) = 1
-//        // Cannot use a sum variable multiple times in a rule.
-//        List<Coefficient> coefficients = Arrays.asList(
-//            (Coefficient)(new ConstantNumber(1)),
-//            (Coefficient)(new ConstantNumber(1))
-//        );
-//
-//        List<SummationAtomOrAtom> atoms = Arrays.asList(
-//            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
-//            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
-//        );
-//
-//        try {
-//            AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
-//                    coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
-//            fail("IllegalArgumentException not thrown when duplicate summation variables were used.");
-//        } catch (IllegalArgumentException ex) {
-//            // Exception is expected.
-//        }
-//    }
+    @Test
+    public void testMultipleSumsDuplicates() {
+        // SingleClosed(+A) + SingleClosed(+A) = 1
+        // Cannot use a sum variable multiple times in a rule.
+        List<Coefficient> coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1)),
+            (Coefficient)(new ConstantNumber(1))
+        );
+
+        List<SummationAtomOrAtom> atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new SummationAtom(doubleOpened, new SummationVariableOrTerm[]{new SummationVariable("U"), new Variable("T")})),
+            (SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{new SummationVariable("U"), new SummationVariable("A")}))
+        );
+
+        AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.MI, new ConstantNumber(1)));
+
+        assertEquals("1.0 * DOUBLEOPENED(+U, T) + 1.0 * DOUBLECLOSED(+U, +A) MI 1.0 .", rule.toString());
+    }
 
     @Test
     public void testSumWithConstant() {

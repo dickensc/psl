@@ -196,7 +196,7 @@ public class GroundRuleTest {
 
     /**
      * Test that rules with grounding only predicates obey the predicates.
-     * Note that gronding only predicates are handled at the grounding query level
+     * Note that grounding only predicates are handled at the grounding query level
      * and don't actually make it into the ground rule.
      * Remember, all rules will be in DNF.
      */
@@ -617,6 +617,50 @@ public class GroundRuleTest {
             "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Eugene', 'Charlie') >= 1.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
             // "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
+        );
+        rule.groundAll(manager, store);
+        PSLTest.compareGroundRules(expected, rule, store);
+    }
+
+    /**
+     * Test for basic mutual information.
+     * Friends(+A, B) MI Nice(+C)
+     * */
+    @Test
+    public void testBaseMutualInformation() {
+        GroundRuleStore store = new MemoryGroundRuleStore();
+        AtomManager manager = new PersistedAtomManager(database);
+
+        Rule rule;
+        List<String> expected;
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
+
+        coefficients = Arrays.asList(
+                (Coefficient)(new ConstantNumber(1.0f)),
+                (Coefficient)(new ConstantNumber(-1.0f))
+        );
+
+        atoms = Arrays.asList(
+                (SummationAtomOrAtom)(new SummationAtom(model.predicates.get("Friends"),
+                        new SummationVariableOrTerm[]{new SummationVariable("A"), new Variable("B")}
+                )), (SummationAtomOrAtom)(new SummationAtom(model.predicates.get("Nice"),
+                        new SummationVariableOrTerm[]{new SummationVariable("C")}
+                ))
+        );
+
+        rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.MI, new ConstantNumber(0.0f)),
+                1.0f,
+                false
+        );
+
+        expected = Arrays.asList(
+                "1.0: -1.0 * NICE('Charlie') + -1.0 * NICE('Bob') + -1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Bob', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Alice', 'Charlie') MI 0.0",
+                "1.0: -1.0 * NICE('Charlie') + -1.0 * NICE('Bob') + -1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Charlie', 'Bob') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Alice', 'Bob') MI 0.0",
+                "1.0: -1.0 * NICE('Charlie') + -1.0 * NICE('Bob') + -1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * FRIENDS('Bob', 'Eugene') + 1.0 * FRIENDS('Derek', 'Eugene') + 1.0 * FRIENDS('Alice', 'Eugene') MI 0.0",
+                "1.0: -1.0 * NICE('Charlie') + -1.0 * NICE('Bob') + -1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Charlie', 'Derek') + 1.0 * FRIENDS('Bob', 'Derek') + 1.0 * FRIENDS('Eugene', 'Derek') + 1.0 * FRIENDS('Alice', 'Derek') MI 0.0",
+                "1.0: -1.0 * NICE('Charlie') + -1.0 * NICE('Bob') + -1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Charlie', 'Alice') + 1.0 * FRIENDS('Bob', 'Alice') + 1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Derek', 'Alice') MI 0.0"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -1761,7 +1805,7 @@ public class GroundRuleTest {
     }
 
     /**
-     * Test a select caluse that has no atoms.
+     * Test a select clause that has no atoms.
      * Friends(A, +B) >= 1 {B: B == 'Alice'}
      * Friends(A, +B) >= 1 {B: B != 'Alice'}
      * Friends(A, +B) >= 1 {B: A == 'Alice'}
@@ -1874,7 +1918,7 @@ public class GroundRuleTest {
      * Ensure a PAM exception is thrown for a logical rule.
      */
     @Test
-    public void testLogicalAccessEcception() {
+    public void testLogicalAccessException() {
         GroundRuleStore store = new MemoryGroundRuleStore();
         AtomManager manager = new PersistedAtomManager(database);
 

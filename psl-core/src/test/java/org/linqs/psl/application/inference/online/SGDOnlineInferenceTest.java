@@ -184,7 +184,7 @@ public class SGDOnlineInferenceTest {
                         ),
                         new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("C"))
                 ),
-                5.0,
+                5.0f,
                 true);
 
         commands.add(new AddRule(newRule));

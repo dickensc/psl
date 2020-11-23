@@ -67,6 +67,7 @@ public class ArithmeticRuleExpression {
         this.comparator = comparator;
         this.constant = constant;
 
+        // TODO(Charles): The change for allowing multiple atoms for summation atoms was unnecessary.
         Set<Variable> vars = new HashSet<Variable>();
         Set<String> sumVarNames = new HashSet<String>();
         Map<SummationVariable, List<SummationAtom>> summationMapping = new HashMap<SummationVariable, List<SummationAtom>>();

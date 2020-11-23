@@ -17,15 +17,28 @@
  */
 package org.linqs.psl.application.inference.mpe;
 
+import org.junit.Test;
+import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.InferenceTest;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.QueryAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 
 import org.junit.After;
+import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.expression.*;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.function.FunctionComparator;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class SGDInferenceTest extends InferenceTest {
     @After
@@ -42,5 +55,48 @@ public class SGDInferenceTest extends InferenceTest {
     public void initialValueTest() {
         Options.SGD_LEARNING_RATE.set(10.0);
         super.initialValueTest();
+    }
+
+    /**
+     * Test mutual information rule
+     */
+    @Test
+    public void testArithmeticMI() {
+        TestModel.ModelInformation info = TestModel.getModel();
+
+        Rule rule;
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
+
+        coefficients = Arrays.asList(
+                (Coefficient)(new ConstantNumber(1.0f)),
+                (Coefficient)(new ConstantNumber(-1.0f))
+        );
+
+        atoms = Arrays.asList(
+                (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Friends"),
+                        new SummationVariableOrTerm[]{new SummationVariable("A"), new Variable("B")}
+                )), (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Likes"),
+                        new SummationVariableOrTerm[]{new SummationVariable("C"), new SummationVariable("D")}
+                ))
+        );
+
+        rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.MI, new ConstantNumber(0.0f)),
+                1.0f,
+                false
+        );
+
+        // Friends(+A, B) MI Likes(+C, +D)
+        info.model.clear();
+        info.model.addRule(rule);
+
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+
+        inference.inference();
+        inference.close();
+        inferDB.close();
     }
 }

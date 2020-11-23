@@ -431,11 +431,11 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
     @Override
     public ArithmeticRuleExpression visitArithmeticRuleExpression(ArithmeticRuleExpressionContext ctx) {
-        // Mutual Information Operator.
+        // Mutual Information Operator
         if (ctx.MUTUAL_INFORMATION() != null) {
             List<SummationAtomOrAtom> atoms = new LinkedList<SummationAtomOrAtom>(
                     Arrays.asList(visitAtom((AtomContext)ctx.getChild(2)), visitAtom((AtomContext)ctx.getChild(4))));
-            // Positive coefficient indicates lhs atom, negative coefficient indicates rhs atom.
+            // RHS Coefficients are indicated by -1 coefficient.
             List<Coefficient> coefficients = new LinkedList<Coefficient>(
                     Arrays.asList(new ConstantNumber(1.0f), new ConstantNumber(-1.0f)));
             Coefficient finalCoefficient = new ConstantNumber(0.0f);

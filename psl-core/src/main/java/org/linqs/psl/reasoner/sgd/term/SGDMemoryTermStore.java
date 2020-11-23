@@ -17,15 +17,16 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
 
 /**
  * An in-memory TermStore specifically for SDG terms.
  */
-public class SGDMemoryTermStore extends MemoryVariableTermStore<SGDObjectiveTerm, RandomVariableAtom> {
+public class SGDMemoryTermStore extends MemoryVariableTermStore<SGDObjectiveTerm, GroundAtom> {
     @Override
-    protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
+    protected GroundAtom convertAtomToVariable(GroundAtom atom) {
         return atom;
     }
 }

@@ -49,7 +49,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     // Matching arrays for variables values and atoms.
     // A -1 will be stored if we need to go to the atom for the value.
     private float[] variableValues;
-    private RandomVariableAtom[] variableAtoms;
+    private GroundAtom[] variableAtoms;
 
     private boolean shuffle;
     private int defaultSize;
@@ -89,7 +89,13 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     @Override
     public void syncAtoms() {
         for (int i = 0; i < variables.size(); i++) {
-            variableAtoms[i].setValue(variableValues[i]);
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
+            if (variableAtoms[i] instanceof RandomVariableAtom) {
+                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
+            }
         }
     }
 
@@ -115,13 +121,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     @Override
     public synchronized V createLocalVariable(GroundAtom groundAtom) {
-        if (!(groundAtom instanceof RandomVariableAtom)) {
-            throw new IllegalArgumentException("MemoryVariableTermStores do not keep track of observed atoms (" + groundAtom + ").");
-        }
-
-        RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
-
-        V variable = convertAtomToVariable(atom);
+        V variable = convertAtomToVariable(groundAtom);
         if (variables.containsKey(variable)) {
             return variable;
         }
@@ -134,11 +134,11 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         int index = variables.size();
 
         variables.put(variable, index);
-        variableValues[index] = atom.getValue();
-        variableAtoms[index] = atom;
+        variableValues[index] = groundAtom.getValue();
+        variableAtoms[index] = groundAtom;
 
-        if (atom.getPredicate() instanceof ModelPredicate) {
-            modelPredicates.add((ModelPredicate)atom.getPredicate());
+        if (groundAtom.getPredicate() instanceof ModelPredicate) {
+            modelPredicates.add((ModelPredicate)groundAtom.getPredicate());
         }
 
         return variable;
@@ -256,10 +256,15 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         int count = 0;
         for (int i = 0; i < variables.size(); i++) {
-            if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
-                ModelPredicate predicate = (ModelPredicate)variableAtoms[i].getPredicate();
-                variableValues[i] = predicate.getValue(variableAtoms[i]);
-                rmse += Math.pow(variableValues[i] - predicate.getLabel(variableAtoms[i]), 2);
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
+            if ((variableAtoms[i] instanceof RandomVariableAtom)
+                    && (variableAtoms[i].getPredicate() instanceof ModelPredicate)) {
+                ModelPredicate predicate = (ModelPredicate) variableAtoms[i].getPredicate();
+                variableValues[i] = predicate.getValue((RandomVariableAtom) variableAtoms[i]);
+                rmse += Math.pow(variableValues[i] - predicate.getLabel((RandomVariableAtom) variableAtoms[i]), 2);
                 count++;
             }
         }
@@ -283,8 +288,9 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         int count = 0;
         for (int i = 0; i < variables.size(); i++) {
-            if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
-                ((ModelPredicate)variableAtoms[i].getPredicate()).setLabel(variableAtoms[i], variableValues[i]);
+            if ((variableAtoms[i] instanceof RandomVariableAtom)
+                    && (variableAtoms[i].getPredicate() instanceof ModelPredicate)) {
+                ((ModelPredicate)variableAtoms[i].getPredicate()).setLabel((RandomVariableAtom) variableAtoms[i], variableValues[i]);
                 count++;
             }
         }
@@ -325,5 +331,5 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         return iterator();
     }
 
-    protected abstract V convertAtomToVariable(RandomVariableAtom atom);
+    protected abstract V convertAtomToVariable(GroundAtom atom);
 }

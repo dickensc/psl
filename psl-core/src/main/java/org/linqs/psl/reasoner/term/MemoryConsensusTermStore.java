@@ -47,8 +47,8 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
 
     public MemoryConsensusTermStore() {
         this.store = new MemoryVariableTermStore<T, RandomVariableAtom>() {
-            protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
-                return atom;
+            protected RandomVariableAtom convertAtomToVariable(GroundAtom atom) {
+                return (RandomVariableAtom) atom;
             }
         };
 
