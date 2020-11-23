@@ -168,7 +168,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             variables = new HashMap<V, Integer>((int)Math.ceil(capacity / 0.75));
 
             variableValues = new float[capacity];
-            variableAtoms = new RandomVariableAtom[capacity];
+            variableAtoms = new GroundAtom[capacity];
         } else if (variables.size() < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
             if (capacity < variables.size() * 2) {

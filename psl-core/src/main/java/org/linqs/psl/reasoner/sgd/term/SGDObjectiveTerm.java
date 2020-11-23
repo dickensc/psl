@@ -25,8 +25,7 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -98,7 +97,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      */
     public float minimize(int iteration, VariableTermStore termStore) {
         float movement = 0.0f;
-        Map<Constant, Float> attributeCount = new HashMap<Constant, Float>();
+        float targetProbability = 0.0f;
+        int stakeholderCount = 0;
+        Map<Constant, Integer> attributeCount = new HashMap<Constant, Integer>();
+        Map<Constant, List<Constant>> stakeholderAttributeMap = new HashMap<Constant, List<Constant>>();
+        Map<Constant, Float> attributeConditionedTargetProbability = new HashMap<Constant, Float>();
+        Map<Constant, Float> stakeholderConditionedTargetProbability = new HashMap<Constant, Float>();
 
         GroundAtom[] variableAtoms = termStore.getVariableAtoms();
         float[] variableValues = termStore.getVariableValues();
@@ -119,19 +123,95 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             }
         } else {
             for (int i = 0; i < size; i++) {
-                if (coefficients[i] == -1) {
+                if (coefficients[i] == 1) {
+                    // LHS Atom
+                    targetProbability += variableValues[variableIndexes[i]];
+                    // TODO(Charles): Assuming stakeholder set for open predicate contains stakeholder set for attributes.
+                    stakeholderCount += 1;
+
+                    // TODO(Charles): Assuming only one observed value for stakeholder conditioned target.
+                    stakeholderConditionedTargetProbability.put(variableAtoms[variableIndexes[i]].getArguments()[0],
+                            variableValues[variableIndexes[i]]);
+                } else {
                     // RHS Atom
-                    // TODO(Charles): Assumes second entry is attribute.
-                    if (attributeCount.containsKey(variableAtoms[variableIndexes[i]].getArguments()[1])) {
-                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1], 1.0f);
-                    } else {
-                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1],
-                                attributeCount.get(variableAtoms[variableIndexes[i]].getArguments()[1]) + 1.0f);
+                    // TODO(Charles): Assumes first entry is stakeholder and second entry is attribute.
+                    //  Assumes stakeholder is common for LHS and RHS atoms.
+                    if (variableValues[variableIndexes[i]] == 1.0f) {
+                        if (attributeCount.containsKey(variableAtoms[variableIndexes[i]].getArguments()[1])) {
+                            attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1],
+                                    attributeCount.get(variableAtoms[variableIndexes[i]].getArguments()[1]) + 1);
+                        } else {
+                            attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1], 1);
+                        }
+                    }
+
+                    // TODO(Charles): Assumes 0 or 1 valued attribute atoms.
+                    //  This does not work if attribute is soft or being inferred.
+                    if (variableValues[variableIndexes[i]] == 1.0f) {
+                        if (stakeholderAttributeMap.containsKey(variableAtoms[variableIndexes[i]].getArguments()[0])) {
+                            stakeholderAttributeMap.get(variableAtoms[variableIndexes[i]].getArguments()[0]).add(variableAtoms[variableIndexes[i]].getArguments()[1]);
+                        } else {
+                            stakeholderAttributeMap.put(variableAtoms[variableIndexes[i]].getArguments()[0],
+                                    new LinkedList<Constant>(Arrays.asList(variableAtoms[variableIndexes[i]].getArguments()[1])));
+                        }
                     }
                 }
             }
-        }
 
+            for (Constant stakeholder : stakeholderAttributeMap.keySet()) {
+                for (Constant attribute : stakeholderAttributeMap.get(stakeholder)){
+                    // TODO(Charles): There are cases when a stakeholder does not ground for both RHS and LHS.
+                    if (!stakeholderConditionedTargetProbability.containsKey(stakeholder)) {
+                        break;
+                    }
+
+                    if (attributeConditionedTargetProbability.containsKey(attribute)) {
+                        attributeConditionedTargetProbability.put(attribute,
+                                attributeConditionedTargetProbability.get(attribute) + stakeholderConditionedTargetProbability.get(stakeholder) / attributeCount.get(attribute));
+                    } else {
+                        attributeConditionedTargetProbability.put(attribute, stakeholderConditionedTargetProbability.get(stakeholder) / attributeCount.get(attribute));
+                    }
+                }
+            }
+
+            targetProbability = targetProbability / stakeholderCount;
+            for (int i = 0; i < size; i++) {
+                if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+                    continue;
+                }
+
+                float partial = 0.0f;
+                float attributeProbability = 0.0f;
+                // TODO(Charles): Assuming attributes are mutually exclusive and every stakeholder has exactly one attribute.
+                for (Constant attribute : attributeCount.keySet()) {
+                    attributeProbability = attributeCount.get(attribute) / ((float) stakeholderCount);
+
+                    // target = 1 term
+                    if ((targetProbability != 0.0f) && (attributeConditionedTargetProbability.get(attribute) != 0.0f)) {
+                        partial += attributeProbability * Math.log(attributeConditionedTargetProbability.get(attribute) / targetProbability);
+                    } else if (targetProbability == 0.0f) {
+                        partial += 1000.0f;
+                    } else if (attributeConditionedTargetProbability.get(attribute) == 0.0f) {
+                        partial += -1000.0f;
+                    }
+
+                    // target = 0 term
+                    if ((1.0f - targetProbability != 0.0f) && (1.0f - attributeConditionedTargetProbability.get(attribute) != 0.0f)) {
+                        partial -= attributeProbability * Math.log((1.0f - attributeConditionedTargetProbability.get(attribute)) / (1.0f - targetProbability));
+                    } else if (targetProbability == 0.0f) {
+                        partial -= 1000.0f;
+                    } else if (1 - attributeConditionedTargetProbability.get(attribute) == 0.0f) {
+                        partial -= -1000.0f;
+                    }
+                }
+
+                float step = partial * (learningRate / iteration);
+
+                float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - step));
+                movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
+                variableValues[variableIndexes[i]] = newValue;
+            }
+        }
 
         return movement;
     }

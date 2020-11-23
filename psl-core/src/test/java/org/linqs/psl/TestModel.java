@@ -183,11 +183,11 @@ public class TestModel {
                 new PredicateData(1.0, new Object[]{"Alice", "Surfing"}),
                 new PredicateData(1.0, new Object[]{"Bob", "Surfing"}),
                 new PredicateData(1.0, new Object[]{"Charlie", "Surfing"}),
-                new PredicateData(0.0, new Object[]{"Derek", "Surfing"}),
-                new PredicateData(0.0, new Object[]{"Eugene", "Surfing"}),
-                new PredicateData(1.0, new Object[]{"Alice", "Reading"}),
-                new PredicateData(1.0, new Object[]{"Bob", "Reading"}),
-                new PredicateData(1.0, new Object[]{"Charlie", "Reading"}),
+//                new PredicateData(0.0, new Object[]{"Derek", "Surfing"}),
+//                new PredicateData(0.0, new Object[]{"Eugene", "Surfing"}),
+//                new PredicateData(0.0, new Object[]{"Alice", "Reading"}),
+//                new PredicateData(0.0, new Object[]{"Bob", "Reading"}),
+//                new PredicateData(0.0, new Object[]{"Charlie", "Reading"}),
                 new PredicateData(1.0, new Object[]{"Derek", "Reading"}),
                 new PredicateData(1.0, new Object[]{"Eugene", "Reading"})
         )));
