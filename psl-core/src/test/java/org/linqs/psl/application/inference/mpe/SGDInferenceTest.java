@@ -74,7 +74,7 @@ public class SGDInferenceTest extends InferenceTest {
         );
 
         atoms = Arrays.asList(
-                (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Friends"),
+                (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Buys"),
                         new SummationVariableOrTerm[]{new SummationVariable("A"), new Variable("B")}
                 )), (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Likes"),
                         new SummationVariableOrTerm[]{new SummationVariable("C"), new SummationVariable("D")}
