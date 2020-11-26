@@ -78,11 +78,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    public float evaluate(float[] variableValues) {
+    public float evaluate(float[] variableValues, GroundAtom[] variableAtoms) {
         float dot = dot(variableValues);
 
         if (mutualInformation) {
-            return computeMutualInformation();
+            return computeMutualInformation(variableValues, variableAtoms);
         } else if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
             return weight * (float)Math.pow(Math.max(0.0f, dot), 2);
@@ -123,8 +123,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             }
         } else {
             Map<Constant, List<Constant>> stakeholderAttributeMap = computeStakeholderAttributeMap(variableAtoms, variableValues);
-            float stakeholderCount = stakeholderAttributeMap.keySet().size();
-
             float targetProbability = computeTargetProbability(variableValues);
             Map<Constant, Float> attributeConditionedTargetProbability = computeAttributeConditionedTargetProbability(variableAtoms, variableValues, stakeholderAttributeMap);
 
@@ -133,45 +131,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                     continue;
                 }
 
-                // TODO(Charles): Assumes stakeholder is always the 0'th argument.
-                Constant stakeholder = variableAtoms[variableIndexes[i]].getArguments()[0];
-                float partial = 0.0f;
-                // TODO(Charles): Assuming attributes are mutually exclusive and every stakeholder has exactly one attribute.
-                for (Constant attribute : attributeConditionedTargetProbability.keySet()) {
-                    if (!stakeholderAttributeMap.get(stakeholder).contains(attribute)){
-                        // Partial of P(y | s) w.r.t tar(u, t) is 0 for this case.
-                        continue;
-                    }
-
-                    // target = 1 term
-                    if ((targetProbability != 0.0f) && (attributeConditionedTargetProbability.get(attribute) != 0.0f)) {
-                        partial += Math.log(attributeConditionedTargetProbability.get(attribute) / targetProbability) / (float) stakeholderCount;
-                    } else if ((targetProbability == 0.0f) && (attributeConditionedTargetProbability.get(attribute) == 0.0f)) {
-                        // Define log(0/0) = log(1) = 0
-                        partial += 0.0f;
-                    } else if (targetProbability == 0.0f) {
-                        // Should never happen. if P(Y = 1) = 0 then P(Y = 1| S = s) cannot be anything besides 0.
-                        throw new IllegalStateException("Conditional probability cannot be greater than 0 if probability is 0.");
-                    } else if (attributeConditionedTargetProbability.get(attribute) == 0.0f) {
-                        // Happens if attribute completely determines target. Should be -infinity.
-                        partial += -1000.0f / (float) stakeholderCount;
-                    }
-
-                    // target = 0 term
-                    if ((1.0f - targetProbability != 0.0f) && (1.0f - attributeConditionedTargetProbability.get(attribute) != 0.0f)) {
-                        partial -=  Math.log((1.0f - attributeConditionedTargetProbability.get(attribute)) / (1.0f - targetProbability)) / (float) stakeholderCount;;
-                    } else if ((1 - targetProbability == 0.0f) && (1 - attributeConditionedTargetProbability.get(attribute) == 0.0f)) {
-                        // Define log(0/0) = log(1) = 0
-                        partial += 0.0f;
-                    } else if (1 - targetProbability == 0.0f) {
-                        // Should never happen. if P(Y = 1) = 0 then P(Y = 1| S = s) cannot be anything besides 0.
-                        throw new IllegalStateException("Conditional probability cannot be greater than 0 if probability is 0.");
-                    } else if (1 - attributeConditionedTargetProbability.get(attribute) == 0.0f) {
-                        partial -= -1000.0f / (float) stakeholderCount;
-                    }
-                }
-
-                float step = partial * (learningRate / iteration);
+                float gradient = computeMutualInformationGradient(i, variableAtoms,
+                        attributeConditionedTargetProbability, stakeholderAttributeMap, targetProbability);
+                float step = gradient * (learningRate / iteration);
 
                 float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - step));
                 movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
@@ -221,7 +183,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                         variableValues[variableIndexes[i]]);
             } else {
                 // RHS Atom
-                // TODO(Charles): Assumes first entry is stakeholder and second entry is attribute.
+                // TODO(Charles): Assumes 0'th entry is stakeholder and 1'st entry is attribute.
                 //  Assumes stakeholder is common for LHS and RHS atoms.
                 if (variableValues[variableIndexes[i]] == 1.0f) {
                     if (attributeCount.containsKey(variableAtoms[variableIndexes[i]].getArguments()[1])) {
@@ -253,6 +215,36 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return attributeConditionedTargetProbability;
     }
 
+    private Map<Constant, Float> computeAttributeProbability(float[] variableValues, GroundAtom[] variableAtoms,
+                                                             Map<Constant, List<Constant>> stakeholderAttributeMap) {
+        Map<Constant, Float> attributeProbability = new HashMap<Constant, Float>();
+        Map<Constant, Integer> attributeCount = new HashMap<Constant, Integer>();
+
+        for (int i = 0; i < size; i++) {
+            if (coefficients[i] == 1) {
+                //LHS Atom
+            } else {
+                // RHS Atom
+                // TODO(Charles): Assumes 0'th entry is stakeholder and 1'st entry is attribute.
+                //  Assumes stakeholder is common for LHS and RHS atoms.
+                if (variableValues[variableIndexes[i]] == 1.0f) {
+                    if (attributeCount.containsKey(variableAtoms[variableIndexes[i]].getArguments()[1])) {
+                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1],
+                                attributeCount.get(variableAtoms[variableIndexes[i]].getArguments()[1]) + 1);
+                    } else {
+                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1], 1);
+                    }
+                }
+            }
+        }
+
+        for (Constant attribute : attributeCount.keySet()) {
+            attributeProbability.put(attribute, (float) attributeCount.get(attribute) / stakeholderAttributeMap.keySet().size());
+        }
+
+        return attributeProbability;
+    }
+
     private float computeTargetProbability(float[] variableValues) {
         float targetProbability = 0.0f;
         int stakeholderCount = 0;
@@ -270,9 +262,16 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return targetProbability / stakeholderCount;
     }
 
-    private float computeMutualInformationGradient(Map<Constant, Float> attributeConditionedTargetProbability) {
+    private float computeMutualInformationGradient(int varId, GroundAtom[] variableAtoms,
+                                                   Map<Constant, Float> attributeConditionedTargetProbability,
+                                                   Map<Constant, List<Constant>> stakeholderAttributeMap,
+                                                   float targetProbability) {
         float gradient = 0.0f;
+        float stakeholderCount = stakeholderAttributeMap.keySet().size();
+        // TODO(Charles): Assumes stakeholder is always the 0'th argument.
+        Constant stakeholder = variableAtoms[variableIndexes[varId]].getArguments()[0];
 
+        // TODO(Charles): Assuming attributes are mutually exclusive and every stakeholder has exactly one attribute.
         for (Constant attribute : attributeConditionedTargetProbability.keySet()) {
             if (!stakeholderAttributeMap.get(stakeholder).contains(attribute)){
                 // Partial of P(y | s) w.r.t tar(u, t) is 0 for this case.
@@ -295,7 +294,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
             // target = 0 term
             if ((1.0f - targetProbability != 0.0f) && (1.0f - attributeConditionedTargetProbability.get(attribute) != 0.0f)) {
-                gradient -=  Math.log((1.0f - attributeConditionedTargetProbability.get(attribute)) / (1.0f - targetProbability)) / (float) stakeholderCount;;
+                gradient -=  Math.log((1.0f - attributeConditionedTargetProbability.get(attribute)) / (1.0f - targetProbability)) / (float) stakeholderCount;
             } else if ((1 - targetProbability == 0.0f) && (1 - attributeConditionedTargetProbability.get(attribute) == 0.0f)) {
                 // Define log(0/0) = log(1) = 0
                 gradient += 0.0f;
@@ -310,8 +309,26 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return gradient;
     }
 
-    private float computeMutualInformation() {
-        return 1.0f;
+    private float computeMutualInformation(float[] variableValues, GroundAtom[] variableAtoms) {
+        float mutualInformation = 0.0f;
+
+        Map<Constant, List<Constant>> stakeholderAttributeMap = computeStakeholderAttributeMap(variableAtoms, variableValues);
+        float targetProbability = computeTargetProbability(variableValues);
+        Map<Constant, Float> attributeConditionedTargetProbability = computeAttributeConditionedTargetProbability(variableAtoms, variableValues, stakeholderAttributeMap);
+        Map<Constant, Float> attributeProbability = computeAttributeProbability(variableValues, variableAtoms, stakeholderAttributeMap);
+
+        // TODO(Charles): Assuming attributes are mutually exclusive and every stakeholder has exactly one attribute.
+        for (Constant attribute : attributeConditionedTargetProbability.keySet()) {
+            // target = 1 term
+            mutualInformation += (attributeProbability.get(attribute) * attributeConditionedTargetProbability.get(attribute)
+                    * Math.log(attributeConditionedTargetProbability.get(attribute) / targetProbability));
+
+            // target = 0 term
+            mutualInformation += (attributeProbability.get(attribute) * (1 - attributeConditionedTargetProbability.get(attribute))
+                    * Math.log((1 - attributeConditionedTargetProbability.get(attribute)) / (1 - targetProbability)));
+        }
+
+        return mutualInformation;
     }
 
     private float computeGradient(int varId, float dot) {

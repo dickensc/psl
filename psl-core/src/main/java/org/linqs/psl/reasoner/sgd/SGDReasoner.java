@@ -82,7 +82,7 @@ public class SGDReasoner extends Reasoner {
 
             for (SGDObjectiveTerm term : termStore) {
                 if (oldVariableValues != null) {
-                    objective += term.evaluate(oldVariableValues);
+                    objective += term.evaluate(oldVariableValues, termStore.getVariableAtoms());
                 }
 
                 termCount++;
@@ -165,7 +165,7 @@ public class SGDReasoner extends Reasoner {
 
         float[] variableValues = termStore.getVariableValues();
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
-            objective += term.evaluate(variableValues);
+            objective += term.evaluate(variableValues, termStore.getVariableAtoms());
         }
 
         return objective;

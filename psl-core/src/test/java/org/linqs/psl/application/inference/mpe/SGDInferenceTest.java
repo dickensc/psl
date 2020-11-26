@@ -40,6 +40,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.Assert.assertEquals;
+
 public class SGDInferenceTest extends InferenceTest {
     @After
     public void cleanup() {
@@ -95,8 +97,10 @@ public class SGDInferenceTest extends InferenceTest {
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-        inference.inference();
+        double objective = inference.inference();
         inference.close();
         inferDB.close();
+
+        assertEquals(0.0, objective, 0.01);
     }
 }
