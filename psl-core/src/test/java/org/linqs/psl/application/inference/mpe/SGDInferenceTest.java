@@ -78,7 +78,7 @@ public class SGDInferenceTest extends InferenceTest {
         atoms = Arrays.asList(
                 (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Buys"),
                         new SummationVariableOrTerm[]{new SummationVariable("A"), new Variable("B")}
-                )), (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Likes"),
+                )), (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Gender"),
                         new SummationVariableOrTerm[]{new SummationVariable("C"), new SummationVariable("D")}
                 ))
         );
@@ -89,7 +89,7 @@ public class SGDInferenceTest extends InferenceTest {
                 false
         );
 
-        // Friends(+A, B) MI Likes(+C, +D)
+        // Buys(+A, B) MI Gender(+C, +D)
         info.model.clear();
         info.model.addRule(rule);
 
@@ -101,6 +101,6 @@ public class SGDInferenceTest extends InferenceTest {
         inference.close();
         inferDB.close();
 
-        assertEquals(0.0, objective, 0.01);
+        assertEquals(0.0, objective, 0.2);
     }
 }

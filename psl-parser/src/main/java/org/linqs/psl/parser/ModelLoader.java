@@ -434,7 +434,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
         // Mutual Information Operator
         if (ctx.MUTUAL_INFORMATION() != null) {
             List<SummationAtomOrAtom> atoms = new LinkedList<SummationAtomOrAtom>(
-                    Arrays.asList(visitAtom((AtomContext)ctx.getChild(2)), visitAtom((AtomContext)ctx.getChild(4))));
+                    Arrays.asList(visitSummationAtom((SummationAtomContext)ctx.getChild(2)),
+                            visitSummationAtom((SummationAtomContext)ctx.getChild(4))));
             // RHS Coefficients are indicated by -1 coefficient.
             List<Coefficient> coefficients = new LinkedList<Coefficient>(
                     Arrays.asList(new ConstantNumber(1.0f), new ConstantNumber(-1.0f)));

@@ -103,7 +103,7 @@ public class TestModel {
         predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueStringID});
         predicatesInfo.put("Person", new ConstantType[]{ConstantType.UniqueStringID});
         predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
-        predicatesInfo.put("Likes", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
+        predicatesInfo.put("Gender", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
         predicatesInfo.put("Buys", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
 
         Map<String, StandardPredicate> predicates = new HashMap<String, StandardPredicate>();
@@ -179,18 +179,13 @@ public class TestModel {
             )));
         }
 
-        // Likes
-        observations.put(predicates.get("Likes"), new ArrayList<PredicateData>(Arrays.asList(
-                new PredicateData(1.0, new Object[]{"Alice", "Surfing"}),
-                new PredicateData(1.0, new Object[]{"Bob", "Surfing"}),
-                new PredicateData(1.0, new Object[]{"Charlie", "Surfing"}),
-//                new PredicateData(0.0, new Object[]{"Derek", "Surfing"}),
-//                new PredicateData(0.0, new Object[]{"Eugene", "Surfing"}),
-//                new PredicateData(0.0, new Object[]{"Alice", "Reading"}),
-//                new PredicateData(0.0, new Object[]{"Bob", "Reading"}),
-//                new PredicateData(0.0, new Object[]{"Charlie", "Reading"}),
-                new PredicateData(1.0, new Object[]{"Derek", "Reading"}),
-                new PredicateData(1.0, new Object[]{"Eugene", "Reading"})
+        // Gender
+        observations.put(predicates.get("Gender"), new ArrayList<PredicateData>(Arrays.asList(
+                new PredicateData(1.0, new Object[]{"Alice", "Female"}),
+                new PredicateData(1.0, new Object[]{"Bob", "Male"}),
+                new PredicateData(1.0, new Object[]{"Charlie", "Male"}),
+                new PredicateData(1.0, new Object[]{"Derek", "Male"}),
+                new PredicateData(1.0, new Object[]{"Eugene", "Male"})
         )));
 
         // Friends
@@ -241,18 +236,21 @@ public class TestModel {
         )));
 
         // Buys
+        observations.put(predicates.get("Buys"), new ArrayList<PredicateData>(Arrays.asList(
+                new PredicateData(1.0f, new Object[]{"Alice", "Surfboard"}),
+                new PredicateData(0.0f, new Object[]{"Alice", "Book"}),
+                new PredicateData(1.0f, new Object[]{"Bob", "Book"}),
+                new PredicateData(0.0f, new Object[]{"Derek", "Book"}),
+                new PredicateData(0.0f, new Object[]{"Eugene", "Book"})
+        )));
+
         targets.put(predicates.get("Buys"), new ArrayList<PredicateData>(Arrays.asList(
-                new PredicateData(new Object[]{"Alice", "Surfboard"}),
                 new PredicateData(new Object[]{"Bob", "Surfboard"}),
                 new PredicateData(new Object[]{"Charlie", "Surfboard"}),
                 new PredicateData(new Object[]{"Derek", "Surfboard"}),
                 new PredicateData(new Object[]{"Eugene", "Surfboard"}),
-                new PredicateData(new Object[]{"Alice", "Book"}),
-                new PredicateData(new Object[]{"Bob", "Book"}),
-                new PredicateData(new Object[]{"Charlie", "Book"}),
-                new PredicateData(new Object[]{"Derek", "Book"}),
-                new PredicateData(new Object[]{"Eugene", "Book"})
-        )));
+                new PredicateData(new Object[]{"Charlie", "Book"})
+                )));
 
         truths.put(predicates.get("Buys"), new ArrayList<PredicateData>(Arrays.asList(
                 new PredicateData(1.0, new Object[]{"Alice", "Surfboard"}),

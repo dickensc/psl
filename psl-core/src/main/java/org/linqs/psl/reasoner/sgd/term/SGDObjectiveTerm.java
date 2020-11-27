@@ -178,31 +178,28 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         for (int i = 0; i < size; i++) {
             if (coefficients[i] == 1) {
                 //LHS Atom
-                // TODO(Charles): Assuming only one observed value for stakeholder conditioned target.
+                // TODO(Charles): Assuming only one value per stakeholder conditioned target.
                 stakeholderConditionedTargetProbability.put(variableAtoms[variableIndexes[i]].getArguments()[0],
                         variableValues[variableIndexes[i]]);
             } else {
                 // RHS Atom
-                // TODO(Charles): Assumes 0'th entry is stakeholder and 1'st entry is attribute.
-                //  Assumes stakeholder is common for LHS and RHS atoms.
-                if (variableValues[variableIndexes[i]] == 1.0f) {
-                    if (attributeCount.containsKey(variableAtoms[variableIndexes[i]].getArguments()[1])) {
-                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1],
-                                attributeCount.get(variableAtoms[variableIndexes[i]].getArguments()[1]) + 1);
-                    } else {
-                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1], 1);
-                    }
+                // Need to populate stakeholderConditionedTargetProbability before counting attributes.
+            }
+        }
+
+        // TODO(Charles): There are cases when a stakeholder does not ground for both RHS and LHS.
+        for (Constant stakeholder : stakeholderConditionedTargetProbability.keySet()) {
+            for (Constant attribute : stakeholderAttributeMap.get(stakeholder)){
+                if (attributeCount.containsKey(attribute)) {
+                    attributeCount.put(attribute, attributeCount.get(attribute) + 1);
+                } else {
+                    attributeCount.put(attribute, 1);
                 }
             }
         }
 
-        for (Constant stakeholder : stakeholderAttributeMap.keySet()) {
+        for (Constant stakeholder : stakeholderConditionedTargetProbability.keySet()) {
             for (Constant attribute : stakeholderAttributeMap.get(stakeholder)){
-                // TODO(Charles): There are cases when a stakeholder does not ground for both RHS and LHS.
-                if (!stakeholderConditionedTargetProbability.containsKey(stakeholder)) {
-                    break;
-                }
-
                 if (attributeConditionedTargetProbability.containsKey(attribute)) {
                     attributeConditionedTargetProbability.put(attribute,
                             attributeConditionedTargetProbability.get(attribute) + stakeholderConditionedTargetProbability.get(stakeholder) / attributeCount.get(attribute));
@@ -259,7 +256,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             }
         }
 
-        return targetProbability / stakeholderCount;
+        return targetProbability / (float) stakeholderCount;
     }
 
     private float computeMutualInformationGradient(int varId, GroundAtom[] variableAtoms,
@@ -286,7 +283,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 gradient += 0.0f;
             } else if (targetProbability == 0.0f) {
                 // Should never happen. if P(Y = 1) = 0 then P(Y = 1| S = s) cannot be anything besides 0.
-                throw new IllegalStateException("Conditional probability cannot be greater than 0 if probability is 0.");
+                throw new IllegalStateException(String.format("Attribute conditional probability cannot be greater than 0 if probability is 0. " +
+                        "Conditional probability: %f " +
+                        "\nTarget Probability: %f", attributeConditionedTargetProbability.get(attribute), targetProbability));
             } else if (attributeConditionedTargetProbability.get(attribute) == 0.0f) {
                 // Happens if attribute completely determines target. Should be -infinity.
                 gradient += -1000.0f / (float) stakeholderCount;
@@ -300,7 +299,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 gradient += 0.0f;
             } else if (1 - targetProbability == 0.0f) {
                 // Should never happen. if P(Y = 1) = 0 then P(Y = 1| S = s) cannot be anything besides 0.
-                throw new IllegalStateException("Conditional probability cannot be greater than 0 if probability is 0.");
+                throw new IllegalStateException(String.format("Attribute conditional probability cannot be greater than 0 if probability is 0. " +
+                        "Conditional probability: %f " +
+                        "Target Probability: %f", 1 - attributeConditionedTargetProbability.get(attribute), 1 - targetProbability));
             } else if (1 - attributeConditionedTargetProbability.get(attribute) == 0.0f) {
                 gradient -= -1000.0f / (float) stakeholderCount;
             }
@@ -320,12 +321,37 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         // TODO(Charles): Assuming attributes are mutually exclusive and every stakeholder has exactly one attribute.
         for (Constant attribute : attributeConditionedTargetProbability.keySet()) {
             // target = 1 term
-            mutualInformation += (attributeProbability.get(attribute) * attributeConditionedTargetProbability.get(attribute)
-                    * Math.log(attributeConditionedTargetProbability.get(attribute) / targetProbability));
+            if ((targetProbability != 0.0f) && (attributeConditionedTargetProbability.get(attribute) != 0.0f)) {
+                mutualInformation += (attributeProbability.get(attribute) * attributeConditionedTargetProbability.get(attribute)
+                        * Math.log(attributeConditionedTargetProbability.get(attribute) / targetProbability));
+            } else if ((targetProbability == 0.0f) && (attributeConditionedTargetProbability.get(attribute) == 0.0f)) {
+                // Define log(0/0) = log(1) = 0
+                mutualInformation += 0.0f;
+            } else if (targetProbability == 0.0f) {
+                // Should never happen. if P(Y = 1) = 0 then P(Y = 1| S = s) cannot be anything besides 0.
+                throw new IllegalStateException(String.format("Attribute conditional probability cannot be greater than 0 if probability is 0. " +
+                        "Conditional probability: %f " +
+                        "\nTarget Probability: %f", attributeConditionedTargetProbability.get(attribute), targetProbability));
+            } else if (attributeConditionedTargetProbability.get(attribute) == 0.0f) {
+                // 0 log(0) = 0
+                mutualInformation += 0.0f;
+            }
 
             // target = 0 term
-            mutualInformation += (attributeProbability.get(attribute) * (1 - attributeConditionedTargetProbability.get(attribute))
-                    * Math.log((1 - attributeConditionedTargetProbability.get(attribute)) / (1 - targetProbability)));
+            if ((1.0f - targetProbability != 0.0f) && (1.0f - attributeConditionedTargetProbability.get(attribute) != 0.0f)) {
+                mutualInformation += (attributeProbability.get(attribute) * (1 - attributeConditionedTargetProbability.get(attribute))
+                        * Math.log((1 - attributeConditionedTargetProbability.get(attribute)) / (1 - targetProbability)));
+            } else if ((1 - targetProbability == 0.0f) && (1 - attributeConditionedTargetProbability.get(attribute) == 0.0f)) {
+                mutualInformation += 0.0f;
+            } else if (1 - targetProbability == 0.0f) {
+                // Should never happen. if P(Y = 0) = 0 then P(Y = 0| S = s) cannot be anything besides 0.
+                throw new IllegalStateException(String.format("Attribute conditional probability cannot be greater than 0 if probability is 0. " +
+                        "Conditional probability: %f " +
+                        "Target Probability: %f", 1 - attributeConditionedTargetProbability.get(attribute), 1 - targetProbability));
+            } else if (1 - attributeConditionedTargetProbability.get(attribute) == 0.0f) {
+                // 0 log(0) = 0
+                mutualInformation += 0.0f;
+            }
         }
 
         return mutualInformation;

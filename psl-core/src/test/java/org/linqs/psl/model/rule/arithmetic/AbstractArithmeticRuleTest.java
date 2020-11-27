@@ -122,7 +122,6 @@ public class AbstractArithmeticRuleTest {
 
     @Test
     public void testMultipleSumsDuplicates() {
-        // SingleClosed(+A) + SingleClosed(+A) = 1
         // Cannot use a sum variable multiple times in a rule.
         List<Coefficient> coefficients = Arrays.asList(
             (Coefficient)(new ConstantNumber(1)),

@@ -145,7 +145,7 @@ public class PSLTest {
 
     /**
      * A weaker variant of assertModel() that only uses sorted strings for comparison.
-     * Use when you can't give guarentees on both the order of rules and format of each rule.
+     * Use when you can't give guarantees on both the order of rules and format of each rule.
      */
     public static void assertStringModel(String input, String[] expectedRules, boolean alphabetize) {
         Model model = ModelLoader.load(input);
