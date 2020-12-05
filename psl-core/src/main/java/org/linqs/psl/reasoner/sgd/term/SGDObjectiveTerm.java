@@ -25,11 +25,7 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -216,27 +212,32 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                                                              Map<Constant, List<Constant>> stakeholderAttributeMap) {
         Map<Constant, Float> attributeProbability = new HashMap<Constant, Float>();
         Map<Constant, Integer> attributeCount = new HashMap<Constant, Integer>();
+        List<Constant> stakeholders = new ArrayList<Constant>();
 
+        // TODO(Charles): There are cases when a stakeholder does not ground for both RHS and LHS.
         for (int i = 0; i < size; i++) {
             if (coefficients[i] == 1) {
                 //LHS Atom
+                // TODO(Charles): Assuming only one value per stakeholder conditioned target.
+                stakeholders.add(variableAtoms[variableIndexes[i]].getArguments()[0]);
             } else {
                 // RHS Atom
-                // TODO(Charles): Assumes 0'th entry is stakeholder and 1'st entry is attribute.
-                //  Assumes stakeholder is common for LHS and RHS atoms.
-                if (variableValues[variableIndexes[i]] == 1.0f) {
-                    if (attributeCount.containsKey(variableAtoms[variableIndexes[i]].getArguments()[1])) {
-                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1],
-                                attributeCount.get(variableAtoms[variableIndexes[i]].getArguments()[1]) + 1);
-                    } else {
-                        attributeCount.put(variableAtoms[variableIndexes[i]].getArguments()[1], 1);
-                    }
+                // Need to populate stakeholderConditionedTargetProbability before counting attributes.
+            }
+        }
+
+        for (Constant stakeholder : stakeholders) {
+            for (Constant attribute : stakeholderAttributeMap.get(stakeholder)){
+                if (attributeCount.containsKey(attribute)) {
+                    attributeCount.put(attribute, attributeCount.get(attribute) + 1);
+                } else {
+                    attributeCount.put(attribute, 1);
                 }
             }
         }
 
         for (Constant attribute : attributeCount.keySet()) {
-            attributeProbability.put(attribute, (float) attributeCount.get(attribute) / stakeholderAttributeMap.keySet().size());
+            attributeProbability.put(attribute, (float) attributeCount.get(attribute) / stakeholders.size());
         }
 
         return attributeProbability;

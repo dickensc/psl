@@ -666,7 +666,7 @@ public class Options {
 
     public static final Option REASONER_TOLERANCE = new Option(
         "reasoner.tolerance",
-        1e-5f,
+        1e-12f,
         "How close two objective values need to be to be considered the same.",
         Option.FLAG_NON_NEGATIVE
     );
