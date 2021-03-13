@@ -72,15 +72,16 @@ public class ConfigManager {
 			url = new URL(resource);
 		}
 		catch (MalformedURLException ex) {
+			log.info("MalformedURLException: {}", resource);
 			url = Loader.getResource(resource);
 		}
 		if (url != null) {
 			newConfig = new PropertiesConfiguration(url);
 			masterConfig.append(newConfig);
 			log.info("Configuration file loaded: {}", url);
+		} else {
+			throw new FileNotFoundException(String.format("File not found: %s", resource));
 		}
-		else
-			throw new FileNotFoundException();
 	}
 	
 	public ConfigBundle getBundle(String id) {

@@ -46,6 +46,7 @@ import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.inference.result.FullInferenceResult;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.application.learning.weight.maxlikelihood.VotedPerceptron;
+import org.linqs.psl.application.learning.weight.maxmargin.FrankWolfe;
 import org.linqs.psl.cli.dataloader.DataLoader;
 import org.linqs.psl.cli.dataloader.DataLoaderOutput;
 import org.linqs.psl.config.ConfigBundle;
@@ -237,8 +238,8 @@ public class Launcher {
 		} else if (cmd.hasOption(OPERATION_LEARN)) {
 			log.info("operation::learn ::starting");
 			Database tr_database = data.getDatabase(truthPartition, data.getRegisteredPredicates());
-			VotedPerceptron vp =  new MaxLikelihoodMPE(model, database, tr_database, cb);
-			vp.learn();
+			FrankWolfe fw =  new FrankWolfe(model, database, tr_database, cb);
+			fw.learn();
 			log.info("operation::learn learning:: ::done");
 
 			String modelFilename = cmd.getOptionValue(OPTION_MODEL);

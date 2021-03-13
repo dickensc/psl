@@ -788,7 +788,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
 	@Override
 	public UniqueID visitConstant(ConstantContext ctx) {
-		return data.getUniqueID(ctx.IDENTIFIER().getText());
+		return data.getUniqueID(ctx.STRING_LITERAL().getText().replace("\"", "").replace("\'",""));
 	}
 
 	@Override

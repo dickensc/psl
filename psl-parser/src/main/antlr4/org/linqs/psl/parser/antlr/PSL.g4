@@ -41,10 +41,27 @@ variable
     :   IDENTIFIER
     ;
 
+// Currently, all constants are strings and will get converted downstream.
 constant
-    :   SINGLE_QUOTE IDENTIFIER SINGLE_QUOTE
-    |   DOUBLE_QUOTE IDENTIFIER DOUBLE_QUOTE
-    ;
+   :  STRING_LITERAL
+   ;
+
+// All string literals must be quoted, but can have whatever inside the quotes.
+// Uses C-style quote escape.
+STRING_LITERAL
+   :  SINGLE_QUOTE (STANDARD_STRING_ESCAPE | ~['\\])* SINGLE_QUOTE
+   |  DOUBLE_QUOTE (STANDARD_STRING_ESCAPE | ~["\\])* DOUBLE_QUOTE
+   ;
+
+fragment
+STANDARD_STRING_ESCAPE
+   :  '\\\\'
+   |  '\\\''
+   |  '\\"'
+   |  '\\t'
+   |  '\\n'
+   |  '\\r'
+   ;
 
 //
 // Logical rules
