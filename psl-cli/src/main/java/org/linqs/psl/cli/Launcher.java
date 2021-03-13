@@ -64,6 +64,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.reasoner.admm.ADMMReasonerFactory;
+import org.linqs.psl.reasoner.bool.BooleanMaxWalkSatFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -222,7 +223,7 @@ public class Launcher {
 		if (cmd.hasOption(OPERATION_INFER)) {
 			log.info("operation::infer ::starting");
 
-			cb.setProperty(MPEInference.REASONER_KEY, new ADMMReasonerFactory());
+			cb.setProperty(MPEInference.REASONER_KEY, new BooleanMaxWalkSatFactory());
 			MPEInference mpe = new MPEInference(model, database, cb);
 			FullInferenceResult result = mpe.mpeInference();
 			log.info("operation::infer inference:: ::done");
