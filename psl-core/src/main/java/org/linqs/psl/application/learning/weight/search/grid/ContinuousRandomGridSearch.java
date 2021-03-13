@@ -68,15 +68,6 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
         }
     }
 
-    private void getHypersphereRandomWeights (double[] weights) {
-        double[] hypersphereSurfaceSample = RandUtils.sampleHypersphereSurface(mutableRules.size(), hypersphereRadius);
-
-        for (int i = 0; i < mutableRules.size(); i++) {
-            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
-            weights[i] = Math.abs(hypersphereSurfaceSample[i]);
-        }
-    }
-
     private void getCartesianRandomWeights (double[] weights) {
         for (int i = 0; i < mutableRules.size(); i++) {
             // Returns the next pseudorandom, uniformly distributed value between 0 and 1
@@ -88,11 +79,7 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     protected void getWeights(double[] weights) {
         if (currentScale == 0) {
             // Random choice.
-            if (searchHypersphere){
-                log.debug("Getting Hypersphere Weights");
-                getHypersphereRandomWeights(weights);
-                log.debug("Hypersphere Weights: {}", weights);
-            } else if (searchDirichlet) {
+            if (searchDirichlet) {
                 log.debug("Getting Dirichlet Weights");
                 getDirichletRandomWeights(weights);
                 log.debug("Dirichlet Weights: {}", weights);

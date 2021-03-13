@@ -38,7 +38,6 @@ import java.util.List;
  */
 public class RandomGridSearch extends GridSearch {
     private int maxLocations;
-    private double hypersphereStepSize;
 
     public RandomGridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -49,15 +48,6 @@ public class RandomGridSearch extends GridSearch {
 
         maxLocations = Options.WLA_RGS_MAX_LOCATIONS.getInt();
         numLocations = Math.min(numLocations, maxLocations);
-
-        hypersphereStepSize = Options.WLA_RGS_HYPERSPHERE_STEP_SIZE.getDouble();
-    }
-
-    private void getHypersphereWeights(double[] weights) {
-        double[] vector = RandUtils.sampleGriddedHypersphereSurface(mutableRules.size(), hypersphereStepSize);
-        for (int i = 0; i < mutableRules.size(); i++) {
-            weights[i] = Math.abs(vector[i]);
-        }
     }
 
     @Override
@@ -65,11 +55,7 @@ public class RandomGridSearch extends GridSearch {
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
         assert(indexes.length == spaceDimension);
 
-        if (searchHypersphere) {
-            getHypersphereWeights(weights);
-        } else {
-            getCartesianWeights(indexes, weights);
-        }
+        getCartesianWeights(indexes, weights);
     }
 
     @Override

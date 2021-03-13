@@ -85,16 +85,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected boolean logScale;
 
     /**
-     * The radius of the sphere that is being optimized over
-     * */
-    protected double hypersphereRadius;
-
-    /**
-     * Whether we will be performing search over hypersphere
-     * */
-    protected boolean searchHypersphere;
-
-    /**
      * Whether we will be performing search over hypersphere
      * */
     protected boolean searchDirichlet;
@@ -140,9 +130,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         logScale = Options.WLA_SEARCH_LOG_SCALE.getBoolean();
         logBase = Options.WLA_SEARCH_LOG_BASE.getDouble();
 
-        hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
-        searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
-
         searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
         dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
         dirichletAlphas = new double[mutableRules.size()];
@@ -151,7 +138,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             dirichletAlphas[i] = dirichletAlpha;
         }
 
-        spaceDimension = searchHypersphere ? mutableRules.size() - 1 : mutableRules.size();
+        spaceDimension = mutableRules.size();
     }
 
     @Override

@@ -66,9 +66,6 @@ public class Hyperband extends WeightLearningApplication {
     private boolean logScale;
     private double logBase;
 
-    private Boolean searchHypersphere;
-    private double hypersphereRadius;
-
     private Boolean searchDirichlet;
     private double dirichletAlpha;
     private double[] dirichletAlphas;
@@ -91,9 +88,6 @@ public class Hyperband extends WeightLearningApplication {
 
         logScale = Options.WLA_SEARCH_LOG_SCALE.getBoolean();
         logBase = Options.WLA_SEARCH_LOG_BASE.getDouble();
-
-        searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
-        hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
 
         searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
         dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
@@ -178,15 +172,6 @@ public class Hyperband extends WeightLearningApplication {
         log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
     }
 
-    private void getHypersphereRandomWeights(double[] weights) {
-        double[] hypersphereSurfaceSample = RandUtils.sampleHypersphereSurface(mutableRules.size(), hypersphereRadius);
-
-        for (int i = 0; i < mutableRules.size(); i++) {
-            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
-            weights[i] = Math.abs(hypersphereSurfaceSample[i]);
-        }
-    }
-
     private void getCartesianRandomWeights (double[] config) {
         for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
             // Rand give Gaussian with mean = 0.0 and variance = 1.0.
@@ -211,11 +196,7 @@ public class Hyperband extends WeightLearningApplication {
         for (int i = 0; i < bracketSize; i++) {
             double[] config = new double[mutableRules.size()];
 
-            if (searchHypersphere) {
-                log.debug("Getting Hypersphere Weights");
-                getHypersphereRandomWeights(config);
-                log.debug("Hypersphere Weights: {}", config);
-            } else if (searchDirichlet) {
+            if (searchDirichlet) {
                 log.debug("Getting Dirichlet Weights");
                 getDirichletRandomWeights(config);
                 log.debug("Dirichlet Weights: {}", config);

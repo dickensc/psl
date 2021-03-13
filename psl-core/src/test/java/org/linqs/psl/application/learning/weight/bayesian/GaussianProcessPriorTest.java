@@ -49,6 +49,8 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
     public void testGetConfigs() {
         Options.WLA_GPP_MAX_CONFIGS.set(5);
         Options.WLA_GPP_RANDOM_CONFIGS_ONLY.set(false);
+        Options.WLA_GPP_USE_PROVIDED_WEIGHT.set(false);
+        Options.WLA_SEARCH_DIRICHLET.set(false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior)getWLA();
         List<GaussianProcessPrior.WeightConfig> configs = wl.getConfigs();
@@ -115,6 +117,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         Options.WLA_GPP_MAX_CONFIGS.set(5);
         Options.WLA_GPP_MAX_ITERATIONS.set(3);
         Options.WLA_GPP_RANDOM_CONFIGS_ONLY.set(false);
+        Options.WLA_SEARCH_DIRICHLET.set(false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();
         wl.doLearn();
