@@ -139,8 +139,13 @@ public class FrankWolfe extends WeightLearningApplication {
 		/* Inits local copy of weights and avgWeights to user-specified values. */
 		double[] weights = new double[kernels.size()];
 		double[] avgWeights = new double[kernels.size()];
+//		for (int i = 0; i < weights.length; i++) {
+//			weights[i] = kernels.get(i).getWeight().getWeight();
+//			avgWeights[i] = weights[i];
+//		}
 		for (int i = 0; i < weights.length; i++) {
-			weights[i] = kernels.get(i).getWeight().getWeight();
+			weights[i] = 0;
+			kernels.get(i).setWeight(new PositiveWeight(weights[i]));
 			avgWeights[i] = weights[i];
 		}
 		
@@ -158,7 +163,14 @@ public class FrankWolfe extends WeightLearningApplication {
 				truthIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 				++numGroundings[i];
 			}
+			/* Normalize incompatabilities. */
+			truthIncompatibility[i] = truthIncompatibility[i] / numGroundings[i];
 		}
+
+		for (int i = 0; i < weights.length; ++i) {
+			log.debug(String.format("w_truth_%d Incompatability: %f", i, truthIncompatibility[i]));
+		}
+
 		for (Map.Entry<RandomVariableAtom, ObservedAtom> e : trainingMap.getTrainingMap().entrySet()) {
 			e.getKey().setValue(0.0);
 		}
@@ -190,6 +202,7 @@ public class FrankWolfe extends WeightLearningApplication {
 		while (!converged && iter++ < maxIter) {
 			
 			/* Runs loss-augmented inference with current weights. */
+			/* Max oracle: H(y; w) */
 			reasoner.optimize();
 			
 			/* Computes L1 distance to ground truth. */
@@ -200,7 +213,7 @@ public class FrankWolfe extends WeightLearningApplication {
 				l1Distance += Math.abs(truth - lossaugValue);
 			}
 
-			/* Computes loss-augmented incompatibilities. */
+			/* Computes unweighted loss-augmented incompatibilities. */
 			double[] lossaugIncompatibility = new double[kernels.size()];
 			for (int i = 0; i < kernels.size(); i++) {
 				for (GroundRule gk : reasoner.getGroundKernels(kernels.get(i))) {
@@ -208,8 +221,10 @@ public class FrankWolfe extends WeightLearningApplication {
 						continue;
 					lossaugIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 				}
+				/* Normalize incompatabilities. */
+				lossaugIncompatibility[i] = lossaugIncompatibility[i] / numGroundings[i];
 			}
-			
+
 			/* Computes gradient of weights, where:
 			 *   gradient = (-1 / regParam) * (truthIncompatibilities - lossaugIncompatibilities)
 			 * Note: this is the negative of the formula in the paper, because
@@ -249,7 +264,6 @@ public class FrankWolfe extends WeightLearningApplication {
 				stepSize = 1.0;
 			else
 				stepSize = 0.0;
-
 			
 			/* Takes step. */
 			for (int i = 0; i < weights.length; ++i) {
@@ -282,6 +296,9 @@ public class FrankWolfe extends WeightLearningApplication {
 			log.debug("Iter {}: duality gap: {}", iter, gap);
 			for (int i = 0; i < weights.length; ++i) {
 				log.debug(String.format("Iter %d: i=%d: w_i=%f, g_i=%f", iter, i, weights[i], gradient[i]));
+			}
+			for (int i = 0; i < weights.length; ++i) {
+				log.debug(String.format("w_%d_%d Incompatability: %f", iter, i, lossaugIncompatibility[i]));
 			}
 		}
 		

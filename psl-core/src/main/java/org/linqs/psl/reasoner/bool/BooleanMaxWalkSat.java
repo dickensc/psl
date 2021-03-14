@@ -32,6 +32,8 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.weight.NegativeWeight;
+import org.linqs.psl.model.weight.PositiveWeight;
 import org.linqs.psl.reasoner.Reasoner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,19 +126,27 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 		int newBlockSetting;
 		
 		/* Finds initially unsatisfied GroundKernels */
-		for (GroundRule gk : getGroundKernels())
-			if (gk instanceof WeightedGroundRule && ((WeightedGroundRule) gk).getIncompatibility() > 0.0)
+		for (GroundRule gk : getGroundKernels()) {
+			if (gk instanceof WeightedGroundRule && ((WeightedGroundRule) gk).getIncompatibility() > 0.0 &&
+					((WeightedGroundRule) gk).getWeight() instanceof PositiveWeight &&
+					((WeightedGroundRule) gk).getWeight().getWeight() > 0.0) {
 				unsatGKs.add(gk);
+			} else if (gk instanceof WeightedGroundRule && (1 - ((WeightedGroundRule) gk).getIncompatibility() > 0.0) &&
+					((WeightedGroundRule) gk).getWeight() instanceof NegativeWeight &&
+					((WeightedGroundRule) gk).getWeight().getWeight() < 0.0) {
+				unsatGKs.add(gk);
+			}
+		}
 		
 		/* Changes some RV blocks */
 		for (int flip = 0; flip < maxFlips; flip++) {
-			
+
 			/* Just in case... */
 			if (unsatGKs.size() == 0)
 				return;
-			
+
 			GroundRule gk = (GroundRule) selectAtRandom(unsatGKs);
-			
+
 			/* Collects the RV blocks with at least one RV in gk */
 			rvsToInclude.clear();
 			blocksToInclude.clear();
@@ -159,23 +169,23 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 				candidateExactlyOne[i] = exactlyOne[blockIndex];
 				candidateIncidentGKs[i++] = incidentGKs[blockIndex];
 			}
-			
+
 			if (candidateRVBlocks.length == 0) {
 				flip--;
 				continue;
 			}
-			
+
 			/* With probability noise, changes an RV block in gk at random */
 			if (rand.nextDouble() <= noise) {
 				changeBlock = rand.nextInt(candidateRVBlocks.length);
 				int blockSize = candidateRVBlocks[changeBlock].length;
-								
+
 				do {
 					newBlockSetting = rand.nextInt(blockSize);
 				}
 				while (candidateExactlyOne[changeBlock] && candidateRVBlocks[changeBlock][newBlockSetting].getValue() == 1.0);
-				
-				/* 
+
+				/*
 				 * If the random setting is the current setting, but all 0.0 is also valid,
 				 * switches to that
 				 */
@@ -189,17 +199,17 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 				bestIncompatibility = Double.POSITIVE_INFINITY;
 				double[] currentState;
 				double currentStateTotal;
-				
+
 				/* Considers each block */
 				for (int iBlock = 0; iBlock < candidateRVBlocks.length; iBlock++) {
 					/* Saves current state of block */
 					currentState = new double[candidateRVBlocks[iBlock].length];
 					currentStateTotal = 0.0;
-					for (int iRV = 0 ; iRV < candidateRVBlocks[iBlock].length; iRV++) {
+					for (int iRV = 0; iRV < candidateRVBlocks[iBlock].length; iRV++) {
 						currentState[iRV] = candidateRVBlocks[iBlock][iRV].getValue();
 						currentStateTotal += currentState[iRV];
 					}
-					
+
 					/* Considers each setting to the block */
 					int lastRVIndex = candidateRVBlocks[iBlock].length;
 					/* If all 0.0 is a valid assignment and not the current one, tries that too */
@@ -207,44 +217,54 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 						lastRVIndex++;
 					for (int iSetRV = 0; iSetRV < lastRVIndex; iSetRV++) {
 						/* Only considers this setting if it is not the current setting*/
-						if (iSetRV == candidateRVBlocks[iBlock].length || currentState[iSetRV] != 1.0) {
+//						if (iSetRV == candidateRVBlocks[iBlock].length || currentState[iSetRV] != 1.0) {
 							/* Changes to the current setting to consider */
 							for (int iChangeRV = 0; iChangeRV < candidateRVBlocks[iBlock].length; iChangeRV++)
 								candidateRVBlocks[iBlock][iChangeRV].setValue((iChangeRV == iSetRV) ? 1.0 : 0.0);
-							
+
 							/* Computes weighted incompatibility */
 							currentIncompatibility = 0.0;
 							for (WeightedGroundRule incidentGK : candidateIncidentGKs[iBlock]) {
 								if (!unsatGKs.contains(incidentGK)) {
-									if (incidentGK.getIncompatibility() > 0.0)
+									if ((incidentGK.getIncompatibility() > 0.0 && incidentGK.getWeight() instanceof PositiveWeight)
+											|| ((1 - incidentGK.getIncompatibility()) > 0.0 && incidentGK.getWeight() instanceof NegativeWeight)) {
 										currentIncompatibility += ((WeightedGroundRule) incidentGK).getWeight().getWeight() * ((WeightedGroundRule) incidentGK).getIncompatibility();
+									}
 								}
 							}
-							
+
 							if (currentIncompatibility < bestIncompatibility) {
 								bestIncompatibility = currentIncompatibility;
 								changeBlock = iBlock;
 								newBlockSetting = iSetRV;
 							}
-						}
+//						}
 					}
-					
+
 					/* Restores current state */
-					for (int iRV = 0 ; iRV < candidateRVBlocks[iBlock].length; iRV++)
+					for (int iRV = 0; iRV < candidateRVBlocks[iBlock].length; iRV++)
 						candidateRVBlocks[iBlock][iRV].setValue(currentState[iRV]);
 				}
 			}
-			
+
 			/* Changes assignment to RV block */
 			for (int iChangeRV = 0; iChangeRV < candidateRVBlocks[changeBlock].length; iChangeRV++)
 				candidateRVBlocks[changeBlock][iChangeRV].setValue((iChangeRV == newBlockSetting) ? 1.0 : 0.0);
-			
+
 			/* Computes change to set of unsatisfied GroundCompatibilityKernels */
-			for (WeightedGroundRule incidentGK : candidateIncidentGKs[changeBlock])
-				if (incidentGK.getIncompatibility() > 0.0)
+			for (WeightedGroundRule incidentGK : candidateIncidentGKs[changeBlock]) {
+				if (incidentGK.getIncompatibility() > 0.0
+						&& incidentGK.getWeight() instanceof PositiveWeight
+						&& ((WeightedGroundRule) gk).getWeight().getWeight() > 0.0) {
 					unsatGKs.add(incidentGK);
-				else
+				} else if ((1 - incidentGK.getIncompatibility()) > 0.0
+						&& incidentGK.getWeight() instanceof NegativeWeight
+						&& ((WeightedGroundRule) gk).getWeight().getWeight() < 0.0) {
+					unsatGKs.add(incidentGK);
+				} else {
 					unsatGKs.remove(incidentGK);
+				}
+			}
 			
 			if (flip == 0 || (flip+1) % 5000 == 0) {
 				log.info("Total weighted incompatibility: {}, Infeasbility norm: {}",
