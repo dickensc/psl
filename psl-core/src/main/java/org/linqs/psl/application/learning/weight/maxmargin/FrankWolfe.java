@@ -163,8 +163,8 @@ public class FrankWolfe extends WeightLearningApplication {
 				truthIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 				++numGroundings[i];
 			}
-			/* Normalize incompatabilities. */
-			truthIncompatibility[i] = truthIncompatibility[i] / numGroundings[i];
+//			/* Normalize incompatabilities. */
+//			truthIncompatibility[i] = truthIncompatibility[i] / numGroundings[i];
 		}
 
 		for (int i = 0; i < weights.length; ++i) {
@@ -221,8 +221,8 @@ public class FrankWolfe extends WeightLearningApplication {
 						continue;
 					lossaugIncompatibility[i] += ((WeightedGroundRule) gk).getIncompatibility();
 				}
-				/* Normalize incompatabilities. */
-				lossaugIncompatibility[i] = lossaugIncompatibility[i] / numGroundings[i];
+//				/* Normalize incompatabilities. */
+//				lossaugIncompatibility[i] = lossaugIncompatibility[i] / numGroundings[i];
 			}
 
 			/* Computes gradient of weights, where:
