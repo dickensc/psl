@@ -470,14 +470,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 		}
 		GroundAtom[] atomArray = atoms.toArray(new GroundAtom[atoms.size()]);
 
-		if (FunctionComparator.Equality.equals(expression.getComparator())) {
-			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.LargerThan, finalCoeff));
-			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, FunctionComparator.SmallerThan, finalCoeff));
-			return 2;
-		} else {
-			grs.addGroundRule(makeGroundRule(coeffArray, atomArray, expression.getComparator(), finalCoeff));
-			return 1;
-		}
+		grs.addGroundRule(makeGroundRule(coeffArray, atomArray, expression.getComparator(), finalCoeff));
+		return 1;
 	}
 
 	/**
