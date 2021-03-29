@@ -71,8 +71,6 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 	 * to try during optimization
 	 */
 	public static final String MAX_FLIPS_KEY = CONFIG_PREFIX + ".maxflips";
-	/** Default value for MAX_FLIPS_KEY */
-	public static final int MAX_FLIPS_DEFAULT = 50000;
 	
 	/**
 	 * Key for double property in [0,1] that is the probability of randomly
@@ -83,15 +81,15 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 	public static final double NOISE_DEFAULT = (double) 1 / 100;
 	
 	private Random rand;
-	private final int maxFlips;
+	private int maxFlips;
 	private final double noise;
 	
 	public BooleanMaxWalkSat(ConfigBundle config) {
 		super();
 		rand = new Random();
-		maxFlips = config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
-		if (maxFlips <= 0 )
-			throw new IllegalArgumentException("Max flips must be positive.");
+		maxFlips = config.getInt(MAX_FLIPS_KEY, 0);
+		if (maxFlips < 0 )
+			throw new IllegalArgumentException(String.format("Max flips must be positive: %d", maxFlips));
 		noise = config.getDouble(NOISE_KEY, NOISE_DEFAULT);
 		if (noise < 0.0 || noise > 1.0)
 			throw new IllegalArgumentException("Noise must be in [0,1].");
@@ -99,6 +97,9 @@ public class BooleanMaxWalkSat extends MemoryGroundKernelStore implements Reason
 	
 	@Override
 	public void optimize() {
+		if (maxFlips == 0)
+			maxFlips = 10 * this.size();
+
 		ConstraintBlocker blocker = new ConstraintBlocker(this);
 		blocker.prepareBlocks(true);
 		
