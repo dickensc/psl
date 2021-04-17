@@ -200,7 +200,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                     newWeight = (float)(newWeight + currentStep);
                 }
 
-                log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
+                log.trace("Gradient: {} (without momentum: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
                         currentStep, currentStep - (inertia * lastSteps[i]),
                         expectedIncompatibility[i], observedIncompatibility[i],
                         i, mutableRules.get(i));
@@ -222,9 +222,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
             norm = Math.sqrt(norm);
 
-            if (log.isDebugEnabled()) {
-                getLoss();
-            }
+            getLoss();
 
             double objective = -1.0;
             if ((cutObjective || log.isDebugEnabled()) && evaluator != null) {
@@ -258,7 +256,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 lastWeights[i] = mutableRules.get(i).getWeight();
             }
 
-            log.debug("Iteration {} complete. Energy: {}. Training Objective: {}, Icomp. L2-norm: {}", step, currentLoss, objective, norm);
+            log.debug("Iteration {} complete. Negative Log-Likelihood: {}. Training Objective: {}, Icomp. L2-norm: {}", step, currentLoss, objective, norm);
             log.trace("Model {} ", mutableRules);
         }
 
