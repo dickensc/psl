@@ -212,7 +212,7 @@ public class TrainingMap {
      * Get all atoms that appeared in the truth database.
      * Note that this will also include atoms that map to missing or observed targets.
      */
-    public Iterable<GroundAtom> getAllTruths() {
+    public Iterable<? extends GroundAtom> getAllTruths() {
         return IteratorUtils.join(labelMap.values(), observedMap.values(), missingTargets);
     }
 

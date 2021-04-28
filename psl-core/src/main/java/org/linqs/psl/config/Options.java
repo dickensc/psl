@@ -797,6 +797,13 @@ public class Options {
         "If true, then start all weights at zero."
     );
 
+
+    public static final Option WLA_VP_NORMALIZE_WEIGHTS = new Option(
+            "votedperceptron.normalizeWeights",
+            false,
+            "If true, then normalize every setting of the weights."
+    );
+
     public static final Option WLA_EVAL = new Option(
         "weightlearning.evaluator",
         ContinuousEvaluator.class.getName(),

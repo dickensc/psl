@@ -190,7 +190,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
             return;
         }
 
-        inference.inference(false, true);
+        inference.inference(false, false);
         inMPEState = true;
     }
 
