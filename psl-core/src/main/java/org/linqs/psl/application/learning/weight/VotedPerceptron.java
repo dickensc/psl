@@ -137,6 +137,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
         // Keep track of the last steps for each weight so we can apply momentum.
         double[] lastSteps = new double[mutableRules.size()];
+        double[] lastgradient = new double[mutableRules.size()];
         double lastObjective = -1.0;
 
         float[] currentWeights = new float[mutableRules.size()];
@@ -199,6 +200,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                         - l2Regularization * newWeight
                         - l1Regularization) / scalingFactor[i];
 
+                lastgradient[i] = currentStep;
+                log.trace("Gradient: {}, Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
+                        currentStep, expectedIncompatibility[i], observedIncompatibility[i],
+                        i, mutableRules.get(i));
+
                 currentStep *= baseStepSize;
 
                 if (scaleStepSize) {
@@ -213,11 +219,6 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 } else {
                     newWeight = (float)(newWeight + currentStep);
                 }
-
-                log.trace("Gradient: {} (without momentum: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
-                        currentStep, currentStep - (inertia * lastSteps[i]),
-                        expectedIncompatibility[i], observedIncompatibility[i],
-                        i, mutableRules.get(i));
 
                 lastSteps[i] = currentStep;
                 currentWeights[i] = newWeight;
@@ -236,6 +237,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
             currentLocation = StringUtils.join(DELIM, currentWeights);
 
             log.trace("Weights: {}", currentWeights);
+            log.trace("Gradient Magnitude: {}", MathUtils.computeMagnitude(lastgradient));
 
             // The weights have changed, so we are no longer in an MPE state.
             inMPEState = false;

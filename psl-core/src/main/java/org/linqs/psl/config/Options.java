@@ -668,6 +668,12 @@ public class Options {
         "The alpha parameter for the dirichlet distribution of the weight sampler."
     );
 
+    public static final Option WLA_SEARCH_NEGATIVE_WEIGHTS = new Option(
+            "search.negativeweights",
+            false,
+            "Whether to include negative weights in search."
+    );
+
     public static final Option SGD_LEARNING_RATE = new Option(
         "sgd.learningrate",
         1.0f,

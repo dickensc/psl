@@ -180,11 +180,7 @@ public final class MathUtils {
             throw new ArithmeticException("Cannot scale a vector to a non-positive magnitude.");
         }
 
-        for (int i = 0; i < vector.length; i++) {
-            norm += Math.pow(vector[i], 2);
-        }
-
-        norm = Math.sqrt(norm);
+        norm = computeMagnitude(vector);
         if (!((norm != 0.0) || (vector.length == 0))) {
             throw new ArithmeticException("Cannot scale a zero vector to a non-zero magnitude.");
         }
@@ -198,17 +194,13 @@ public final class MathUtils {
      * Scale n-dimensional float array to vector with the specified magnitude.
      */
     public static void toMagnitude(float[] vector, double magnitude) {
-        double norm = 0.0;
+        float norm = 0.0f;
 
         if (magnitude <= 0.0) {
             throw new ArithmeticException("Cannot scale a vector to a non-positive magnitude.");
         }
 
-        for (int i = 0; i < vector.length; i++) {
-            norm += Math.pow(vector[i], 2);
-        }
-
-        norm = Math.sqrt(norm);
+        norm = computeMagnitude(vector);
         if (!((norm != 0.0) || (vector.length == 0))) {
             throw new ArithmeticException("Cannot scale a zero vector to a non-zero magnitude.");
         }
@@ -216,5 +208,41 @@ public final class MathUtils {
         for (int i = 0; i < vector.length; i++) {
             vector[i] = (float)(magnitude * (vector[i] / norm));
         }
+    }
+
+    public static double computeMagnitude(double[] vector) {
+        return pNorm(vector, 2.0);
+    }
+
+    public static float computeMagnitude(float[] vector) {
+        return pNorm(vector, 2.0f);
+    }
+
+    public static double pNorm(double[] vector, double p) {
+        double norm = 0.0;
+
+        if (p < 1.0) {
+            throw new ArithmeticException("A p-norm for p < 1.0 is undefined.");
+        }
+
+        for (int i = 0; i < vector.length; i++) {
+            norm += Math.abs(Math.pow(vector[i], p));
+        }
+
+        return Math.pow(norm, 1.0 / p);
+    }
+
+    public static float pNorm(float[] vector, float p) {
+        float norm = 0.0f;
+
+        if (p < 1.0) {
+            throw new ArithmeticException("A p-norm for p < 1.0 is undefined.");
+        }
+
+        for (int i = 0; i < vector.length; i++) {
+            norm += Math.abs(Math.pow(vector[i], p));
+        }
+
+        return (float)(Math.pow(norm, 1.0f / p));
     }
 }

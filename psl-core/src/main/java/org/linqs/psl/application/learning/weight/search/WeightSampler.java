@@ -29,6 +29,11 @@ public class WeightSampler {
     private boolean searchDirichlet;
 
     /**
+     * Whether the search will include negative weights.
+     */
+    private boolean searchNegativeWeights;
+
+    /**
      * The alpha parameters for the dirichlet distribution.
      */
     private double[] dirichletAlphas;
@@ -42,6 +47,7 @@ public class WeightSampler {
         this.numWeights = numWeights;
 
         searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
+        searchNegativeWeights = Options.WLA_SEARCH_NEGATIVE_WEIGHTS.getBoolean();
         double dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
         dirichletAlphas = new double[this.numWeights];
 
@@ -55,6 +61,12 @@ public class WeightSampler {
             getDirichletRandomWeights(weights);
         } else {
             getHypercubeRandomWeights(weights);
+        }
+
+        if (searchNegativeWeights) {
+            for (int i=0; i < numWeights; i++) {
+                weights[i] = RandUtils.nextFloat() < 0.5 ? -weights[i] : weights[i];
+            }
         }
     }
 

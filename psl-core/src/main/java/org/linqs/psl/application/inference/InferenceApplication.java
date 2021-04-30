@@ -309,7 +309,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
         for (Rule rule : rules) {
             if (rule instanceof WeightedRule) {
-                float weight = ((WeightedRule)rule).getWeight();
+                float weight = Math.abs(((WeightedRule)rule).getWeight());
                 if (weight > largestWeight) {
                     largestWeight = weight;
                 }

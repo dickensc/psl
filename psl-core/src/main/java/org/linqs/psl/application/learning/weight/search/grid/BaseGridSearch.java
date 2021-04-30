@@ -132,13 +132,15 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
                 }
             }
 
-            log.debug("Weights: {} -- objective: {}", currentLocation, objective);
+            log.debug("Weights: {} -- objective: {}", weights, -objective);
         }
 
         // Set the final weights.
         for (int i = 0; i < mutableRules.size(); i++) {
             mutableRules.get(i).setWeight(bestWeights[i]);
         }
+
+        log.debug("Learning Complete. Best Weights: {} -- Best objective: {}", bestWeights, -bestObjective);
 
         // The weights have changed, so we are no longer in an MPE state.
         inMPEState = false;
