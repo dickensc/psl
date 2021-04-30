@@ -44,4 +44,15 @@ public class ObservedAtom extends GroundAtom {
     public boolean isConstant() {
         return true;
     }
+
+    /**
+     * DO NOT USE without explicit permission from the head developer.
+     * This method just sets the truth value of this atom.
+     * However, observed atoms are supposed to have a fixed value.
+     * This can only be used is VERY specific situations and with a considerable amount of preparation.
+     */
+    public void _assumeValue(float newValue) {
+        value = newValue;
+    }
+
 }

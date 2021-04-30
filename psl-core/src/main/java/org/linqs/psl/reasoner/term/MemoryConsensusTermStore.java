@@ -158,7 +158,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
         }
     }
 
-    public RandomVariableAtom getAtom(int index) {
+    public GroundAtom getAtom(int index) {
         return store.getAtom(index);
     }
 

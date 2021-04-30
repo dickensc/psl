@@ -64,6 +64,11 @@ public class TrainingMap {
     private final Map<RandomVariableAtom, ObservedAtom> labelMap;
 
     /**
+     * The inverse mapping between observed truth atoms and RVAs.
+     */
+    private final Map<ObservedAtom, RandomVariableAtom> inverseLabelMap;
+
+    /**
      * A mapping like the label mapping, but only contains target atoms that are observed.
      */
     private final Map<ObservedAtom, ObservedAtom> observedMap;
@@ -91,6 +96,7 @@ public class TrainingMap {
      */
     public TrainingMap(PersistedAtomManager targets, Database truthDatabase) {
         Map<RandomVariableAtom, ObservedAtom> tempLabelMap = new HashMap<RandomVariableAtom, ObservedAtom>(targets.getPersistedCount());
+        Map<ObservedAtom, RandomVariableAtom> tempInverseLabelMap = new HashMap<ObservedAtom, RandomVariableAtom>(targets.getPersistedCount());
         Map<ObservedAtom, ObservedAtom> tempObservedMap = new HashMap<ObservedAtom, ObservedAtom>();
         List<RandomVariableAtom> tempLatentVariables = new ArrayList<RandomVariableAtom>();
         List<ObservedAtom> tempMissingLabels = new ArrayList<ObservedAtom>();
@@ -118,6 +124,7 @@ public class TrainingMap {
                 } else {
                     seenTruthAtoms.add((ObservedAtom)truthAtom);
                     tempLabelMap.put((RandomVariableAtom)targetAtom, (ObservedAtom)truthAtom);
+                    tempInverseLabelMap.put((ObservedAtom)truthAtom, (RandomVariableAtom)targetAtom);
                 }
             } else {
                 if (truthAtom == null) {
@@ -146,6 +153,7 @@ public class TrainingMap {
 
         // Finalize the structures.
         labelMap = Collections.unmodifiableMap(tempLabelMap);
+        inverseLabelMap = Collections.unmodifiableMap(tempInverseLabelMap);
         observedMap = Collections.unmodifiableMap(tempObservedMap);
         latentVariables = Collections.unmodifiableList(tempLatentVariables);
         missingLabels = Collections.unmodifiableList(tempMissingLabels);
@@ -162,6 +170,13 @@ public class TrainingMap {
      */
     public Map<RandomVariableAtom, ObservedAtom> getLabelMap() {
         return labelMap;
+    }
+
+    /**
+     * Get the mapping of truth atoms to unobserved targets.
+     */
+    public Map<ObservedAtom, RandomVariableAtom> getInverseLabelMap() {
+        return inverseLabelMap;
     }
 
     /**

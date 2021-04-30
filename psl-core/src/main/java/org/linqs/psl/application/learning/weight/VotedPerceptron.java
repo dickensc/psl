@@ -80,6 +80,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
     protected boolean averageSteps;
     protected boolean zeroInitialWeights;
     protected boolean normalizeWeights;
+    protected boolean sampleTrainSet;
     protected boolean clipNegativeWeights;
     protected boolean cutObjective;
     protected double inertia;
@@ -110,6 +111,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
         scaleStepSize = Options.WLA_VP_SCALE_STEP.getBoolean();
         zeroInitialWeights = Options.WLA_VP_ZERO_INITIAL_WEIGHTS.getBoolean();
         normalizeWeights = Options.WLA_VP_NORMALIZE_WEIGHTS.getBoolean();
+        sampleTrainSet = Options.WLA_VP_SAMPLE_TRAIN_SET.getBoolean();
         clipNegativeWeights = Options.WLA_VP_CLIP_NEGATIVE_WEIGHTS.getBoolean();
         cutObjective = Options.WLA_VP_CUT_OBJECTIVE.getBoolean();
 
@@ -186,6 +188,11 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
         for (int step = 0; step < numSteps; step++) {
             log.debug("Starting iteration {}", step);
             currentLoss = Double.NaN;
+
+            if (sampleTrainSet) {
+                // Fix half of the training map.
+                shuffleObservedSet();
+            }
 
             // Computes the expected incompatibility.
             computeExpectedIncompatibility();

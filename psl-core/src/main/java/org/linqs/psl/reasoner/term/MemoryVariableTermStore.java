@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -51,7 +52,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     // Matching arrays for variables values and atoms.
     // A -1 will be stored if we need to go to the atom for the value.
     private float[] variableValues;
-    private RandomVariableAtom[] variableAtoms;
+    private GroundAtom[] variableAtoms;
 
     private boolean shuffle;
     private int defaultSize;
@@ -98,8 +99,12 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         double movement = 0.0;
 
         for (int i = 0; i < variables.size(); i++) {
-            movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
-            variableAtoms[i].setValue(variableValues[i]);
+            if (variableAtoms[i] instanceof RandomVariableAtom) {
+                movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
+                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
+            } else {
+                ((ObservedAtom)variableAtoms[i])._assumeValue(variableValues[i]);
+            }
         }
 
         return Math.sqrt(movement);
@@ -208,7 +213,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             variables = new HashMap<V, Integer>((int)Math.ceil(capacity / 0.75));
 
             variableValues = new float[capacity];
-            variableAtoms = new RandomVariableAtom[capacity];
+            variableAtoms = new GroundAtom[capacity];
         } else if (variables.size() < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
             if (capacity < variables.size() * 2) {
@@ -297,7 +302,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         updateModelAtoms();
     }
 
-    public RandomVariableAtom getAtom(int index) {
+    public GroundAtom getAtom(int index) {
         return variableAtoms[index];
     }
 

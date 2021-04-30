@@ -810,12 +810,24 @@ public class Options {
             "If true, then normalize every setting of the weights."
     );
 
+    public static final Option WLA_VP_SAMPLE_TRAIN_SET = new Option(
+            "votedperceptron.sampleTrainSet",
+            false,
+            "If true, then sample training dataset."
+    );
+
     public static final Option WLA_EVAL = new Option(
         "weightlearning.evaluator",
         ContinuousEvaluator.class.getName(),
         "The evaluator to use during weight learning."
         + " Not all weight learning methods will use the evaluator for decision making,"
         + " but even those will typically output an evaluator score each iteration."
+    );
+
+    public static final Option WLA_TRAIN_SAMPLE_SIZE = new Option(
+        "weightlearning.trainsamplesize",
+        0.5f,
+        ""
     );
 
     public static final Option WLA_RANDOM_WEIGHTS = new Option(

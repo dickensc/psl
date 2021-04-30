@@ -22,8 +22,12 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
 
@@ -57,6 +61,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
     protected List<WeightedRule> mutableRules;
 
     protected TrainingMap trainingMap;
+    protected float trainSampleProportion;
 
     protected InferenceApplication inference;
     protected Evaluator evaluator;
@@ -89,6 +94,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         inMPEState = false;
 
         evaluator = (Evaluator)Options.WLA_EVAL.getNewObject();
+        trainSampleProportion = Options.WLA_TRAIN_SAMPLE_SIZE.getFloat();
     }
 
     /**
@@ -192,6 +198,33 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         inference.inference(false, false);
         inMPEState = true;
+    }
+
+    /**
+     * Fix a subset of the training set using the training map values.
+     */
+    protected void shuffleObservedSet() {
+        GroundAtom[] targets = ((VariableTermStore)inference.getTermStore()).getVariableAtoms();
+        float[] targetValues = ((VariableTermStore)inference.getTermStore()).getVariableValues();
+        int numVariables = ((VariableTermStore)inference.getTermStore()).getNumVariables();
+        GroundAtom atom = null;
+
+        for (int i = 0; i < numVariables; i++) {
+            atom = targets[i];
+            // Independently fix a proportion of the targets.
+            if (RandUtils.nextFloat() > trainSampleProportion) {
+                // Fix as observed atom.
+                if (atom instanceof RandomVariableAtom) {
+                    targets[i] = trainingMap.getLabelMap().get(atom);
+                    targetValues[i] = targets[i].getValue();
+                }
+            } else {
+                // Replace with random variable atom.
+                if (atom instanceof ObservedAtom) {
+                    targets[i] = trainingMap.getInverseLabelMap().get(atom);
+                }
+            }
+        }
     }
 
     @Override
