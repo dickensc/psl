@@ -19,13 +19,15 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.sgd.SGDExtension;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -36,7 +38,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     private WeightedRule rule;
     private float constant;
-    private float learningRate;
 
     private short size;
     private float[] coefficients;
@@ -45,13 +46,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared, boolean hinge,
-            Hyperplane<GroundAtom> hyperplane,
-            float learningRate) {
+            Hyperplane<GroundAtom> hyperplane) {
         this.squared = squared;
         this.hinge = hinge;
 
         this.rule = rule;
-        this.learningRate = learningRate;
 
         size = (short)hyperplane.size();
         coefficients = hyperplane.getCoefficients();
@@ -96,40 +95,109 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(int iteration, VariableTermStore termStore) {
+    public float minimize(int iteration, VariableTermStore termStore, float learningRate,
+            Map<Integer, Float> accumulatedGradientSquares,
+            Map<Integer, Float> accumulatedGradientMean,
+            Map<Integer, Float> accumulatedGradientVariance,
+            SGDExtension sgdExtension, boolean coordinateStep) {
         float movement = 0.0f;
-        float weight = rule.getWeight();
+        float variableStep = 0.0f;
+        float newValue = 0.0f;
+        float partial = 0.0f;
 
         GroundAtom[] variableAtoms = termStore.getVariableAtoms();
         float[] variableValues = termStore.getVariableValues();
+        float dot = dot(variableValues);
 
         for (int i = 0 ; i < size; i++) {
             if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
                 continue;
             }
 
-            float dot = dot(variableValues);
-            float gradient = computeGradient(i, dot);
-            float gradientStep = weight * gradient * (learningRate / iteration);
+            partial = computePartial(i, dot, rule.getWeight());
+            variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial,
+                    accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
+                    sgdExtension);
 
-            float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - gradientStep));
+            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
             movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
             variableValues[variableIndexes[i]] = newValue;
+
+            if (coordinateStep) {
+                dot = dot(variableValues);
+            }
         }
 
         return movement;
     }
 
-    private float computeGradient(int varId, float dot) {
+    private float computeVariableStep(
+            int variableIndex, int iteration, float learningRate, float partial,
+            Map<Integer, Float> accumulatedGradientSquares,
+            Map<Integer, Float> accumulatedGradientMean,
+            Map<Integer, Float> accumulatedGradientVariance,
+            SGDExtension sgdExtension) {
+        float step = 0.0f;
+        float adaptedLearningRate = 0.0f;
+
+        switch (sgdExtension) {
+            case NONE:
+                step = partial * learningRate;
+                break;
+            case ADAGRAD:
+                if (accumulatedGradientSquares.get(variableIndex) == null) {
+                    accumulatedGradientSquares.put(variableIndex, (float)Math.pow(partial, 2.0f));
+                } else {
+                    accumulatedGradientSquares.put(variableIndex, accumulatedGradientSquares.get(variableIndex)
+                            + (float)Math.pow(partial, 2.0f));
+                }
+
+                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares.get(variableIndex) + 1e-8f);
+
+                step = partial * adaptedLearningRate;
+                break;
+            case ADAM:
+                float beta1 = 0.9f * (float)Math.pow(1.0f - 1.0e-8f, iteration - 1.0f);
+                float beta2 = 0.999f;
+                float meanHat = 0.0f;
+                float varianceHat = 0.0f;
+
+                if (accumulatedGradientMean.get(variableIndex) == null) {
+                    accumulatedGradientMean.put(variableIndex, (1.0f - beta1) * partial);
+                } else {
+                    accumulatedGradientMean.put(variableIndex, beta1 * accumulatedGradientMean.get(variableIndex) + (1.0f - beta1) * partial);
+                }
+
+                if (accumulatedGradientVariance.get(variableIndex) == null) {
+                    accumulatedGradientVariance.put(variableIndex, (1.0f - beta2) * (float)Math.pow(partial, 2.0f));
+                } else {
+                    accumulatedGradientVariance.put(variableIndex, beta2 * accumulatedGradientVariance.get(variableIndex)
+                            + (1.0f - beta2) * (float)Math.pow(partial, 2.0f));
+                }
+
+                meanHat = accumulatedGradientMean.get(variableIndex) / (1.0f - beta1);
+                varianceHat = accumulatedGradientVariance.get(variableIndex) / (1.0f - beta2);
+
+                adaptedLearningRate = learningRate / ((float)Math.sqrt(varianceHat) + 1e-8f);
+                step = meanHat * adaptedLearningRate;
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported SGD extension: %s", sgdExtension.getName()));
+        }
+
+        return step;
+    }
+
+    private float computePartial(int varId, float dot, float weight) {
         if (hinge && dot <= 0.0f) {
             return 0.0f;
         }
 
         if (squared) {
-            return 2.0f * dot * coefficients[varId];
+            return weight * 2.0f * dot * coefficients[varId];
         }
 
-        return coefficients[varId];
+        return weight * coefficients[varId];
     }
 
     private float dot(float[] variableValues) {
@@ -152,7 +220,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             + Byte.SIZE  // hinge
             + Integer.SIZE  // rule hash
             + Float.SIZE  // constant
-            + Float.SIZE  // learningRate
             + Short.SIZE  // size
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
 
@@ -168,7 +235,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         fixedBuffer.put((byte)(hinge ? 1 : 0));
         fixedBuffer.putInt(System.identityHashCode(rule));
         fixedBuffer.putFloat(constant);
-        fixedBuffer.putFloat(learningRate);
         fixedBuffer.putShort(size);
 
         for (int i = 0; i < size; i++) {
@@ -185,7 +251,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         hinge = (fixedBuffer.get() == 1);
         rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());
         constant = fixedBuffer.getFloat();
-        learningRate = fixedBuffer.getFloat();
         size = fixedBuffer.getShort();
 
         // Make sure that there is enough room for all these variables.

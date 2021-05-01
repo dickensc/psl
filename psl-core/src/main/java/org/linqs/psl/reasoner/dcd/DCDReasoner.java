@@ -99,7 +99,7 @@ public class DCDReasoner extends Reasoner {
 
             termStore.iterationComplete();
 
-            converged = breakOptimization(iteration, objective, oldObjective, termCount);
+            converged = breakOptimization(objective, oldObjective, termCount);
 
             if (iteration == 1) {
                 // Initialize old variables values.
@@ -129,19 +129,14 @@ public class DCDReasoner extends Reasoner {
         return objective;
     }
 
-    private boolean breakOptimization(int iteration, double objective, double oldObjective, long termCount) {
-        // Always break when the allocated iterations is up.
-        if (iteration > (int)(maxIterations * budget)) {
-            return true;
-        }
-
+    private boolean breakOptimization(double objective, double oldObjective, long termCount) {
         // Run through the maximum number of iterations.
         if (runFullIterations) {
             return false;
         }
 
         // Break if the objective has not changed.
-        if (oldObjective != Double.POSITIVE_INFINITY && objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
+        if (objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
             return true;
         }
 

@@ -30,7 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Uses an SGD optimization method to optimize its GroundRules.
@@ -43,11 +45,23 @@ public class SGDReasoner extends Reasoner {
     private boolean watchMovement;
     private float movementThreshold;
 
+    private float learningRate;
+    private float learningRateInverseScaleExp;
+    private boolean coordinateStep;
+    private SGDLearningSchedule learningSchedule;
+    private SGDExtension sgdExtension;
+
     public SGDReasoner() {
         maxIterations = Options.SGD_MAX_ITER.getInt();
 
         watchMovement = Options.SGD_MOVEMENT.getBoolean();
         movementThreshold = Options.SGD_MOVEMENT_THRESHOLD.getFloat();
+
+        learningRate = Options.SGD_LEARNING_RATE.getFloat();
+        learningRateInverseScaleExp = Options.SGD_INVERSE_TIME_EXP.getFloat();
+        coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
+        learningSchedule = SGDLearningSchedule.valueOf(Options.SGD_LEARNING_SCHEDULE.getString().toUpperCase());
+        sgdExtension = SGDExtension.valueOf(Options.SGD_EXTENSION.getString().toUpperCase());
     }
 
     @Override
@@ -62,7 +76,7 @@ public class SGDReasoner extends Reasoner {
         termStore.initForOptimization();
 
         long termCount = 0;
-        float movement = 0.0f;
+        float meanMovement = 0.0f;
         double change = 0.0;
         double objective = 0.0;
         // Starting on the second iteration, keep track of the previous iteration's objective value.
@@ -72,6 +86,24 @@ public class SGDReasoner extends Reasoner {
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
 
+        Map<Integer, Float> accumulatedGradientSquares = null;
+        Map<Integer, Float> accumulatedGradientMean = null;
+        Map<Integer, Float> accumulatedGradientVariance = null;
+
+        switch (sgdExtension) {
+            case NONE:
+                break;
+            case ADAGRAD:
+                accumulatedGradientSquares = new HashMap<Integer, Float>(termStore.getNumRandomVariables());
+                break;
+            case ADAM:
+                accumulatedGradientMean = new HashMap<Integer, Float>(termStore.getNumRandomVariables());
+                accumulatedGradientVariance = new HashMap<Integer, Float>(termStore.getNumRandomVariables());
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported SGD extension: %s", sgdExtension.getName()));
+        }
+
         long totalTime = 0;
         boolean converged = false;
         int iteration = 1;
@@ -80,7 +112,7 @@ public class SGDReasoner extends Reasoner {
             long start = System.currentTimeMillis();
 
             termCount = 0;
-            movement = 0.0f;
+            meanMovement = 0.0f;
             objective = 0.0;
 
             for (SGDObjectiveTerm term : termStore) {
@@ -89,16 +121,18 @@ public class SGDReasoner extends Reasoner {
                 }
 
                 termCount++;
-                movement += term.minimize(iteration, termStore);
+                meanMovement += term.minimize(iteration, termStore, calculateAnnealedLearningRate(iteration),
+                        accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
+                        sgdExtension, coordinateStep);
             }
 
             termStore.iterationComplete();
 
             if (termCount != 0) {
-                movement /= termCount;
+                meanMovement /= termCount;
             }
 
-            converged = breakOptimization(iteration, objective, oldObjective, movement, termCount);
+            converged = breakOptimization(objective, oldObjective, meanMovement, termCount);
 
             if (iteration == 1) {
                 // Initialize old variables values.
@@ -128,12 +162,7 @@ public class SGDReasoner extends Reasoner {
         return objective;
     }
 
-    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement, long termCount) {
-        // Always break when the allocated iterations is up.
-        if (iteration > (int)(maxIterations * budget)) {
-            return true;
-        }
-
+    private boolean breakOptimization(double objective, double oldObjective, float movement, long termCount) {
         // Run through the maximum number of iterations.
         if (runFullIterations) {
             return false;
@@ -145,7 +174,7 @@ public class SGDReasoner extends Reasoner {
         }
 
         // Break if the objective has not changed.
-        if (oldObjective != Double.POSITIVE_INFINITY && objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
+        if (objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
             return true;
         }
 
@@ -169,6 +198,17 @@ public class SGDReasoner extends Reasoner {
         }
 
         return objective;
+    }
+
+    private float calculateAnnealedLearningRate(int iteration) {
+        switch (learningSchedule) {
+            case STEPDECAY:
+                return learningRate / ((float) Math.pow(iteration, learningRateInverseScaleExp));
+            case CONSTANT:
+                return learningRate;
+            default:
+                throw new IllegalArgumentException(String.format("Illegal value found for SGD learning schedule: '%s'", learningSchedule));
+        }
     }
 
     @Override

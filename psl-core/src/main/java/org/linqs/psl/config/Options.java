@@ -30,6 +30,8 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
+import org.linqs.psl.reasoner.sgd.SGDExtension;
+import org.linqs.psl.reasoner.sgd.SGDLearningSchedule;
 import org.linqs.psl.util.SystemUtils;
 
 import org.json.JSONArray;
@@ -638,8 +640,8 @@ public class Options {
 
     public static final Option REASONER_TOLERANCE = new Option(
         "reasoner.tolerance",
-        1e-5f,
-        "How close towo objective values need to be to be considered the same.",
+        1e-8f,
+        "How close two objective values need to be to be considered the same.",
         Option.FLAG_NON_NEGATIVE
     );
 
@@ -669,9 +671,31 @@ public class Options {
     );
 
     public static final Option WLA_SEARCH_NEGATIVE_WEIGHTS = new Option(
-            "search.negativeweights",
-            false,
-            "Whether to include negative weights in search."
+        "search.negativeweights",
+        false,
+        "Whether to include negative weights in search."
+    );
+
+    public static final Option SGD_COORDINATE_STEP = new Option(
+        "sgd.coordinatestep",
+        false,
+        "Take coordinate steps during sgd."
+    );
+
+    public static final Option SGD_EXTENSION = new Option(
+        "sgd.extension",
+        SGDExtension.NONE.getName(),
+        "The SGD extension to use for SGD reasoning."
+        + "NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+        + "ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
+        + "ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
+    );
+
+    public static final Option SGD_INVERSE_TIME_EXP = new Option(
+        "sgd.inversescaleexp",
+        1.0f,
+        "If SGD is using the STEPDECAY learning schedule, then this value is the negative exponent of the iteration count which scales the gradient step using (learning_rate / ( iteration ^ - SGD_INVERSE_TIME_EXP)).",
+        Option.FLAG_POSITIVE
     );
 
     public static final Option SGD_LEARNING_RATE = new Option(
@@ -679,6 +703,14 @@ public class Options {
         1.0f,
         null,
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option SGD_LEARNING_SCHEDULE = new Option(
+        "sgd.learningschedule",
+        SGDLearningSchedule.STEPDECAY.getName(),
+        "The learning schedule of the SGD inference reasoner changes the learning rate during learning."
+        + "STEPDECAY (Default): Decay the learning rate like: learningRate / (n_epoch^p) where p is set by sgd.inversescaleexp."
+        + "CONSTANT: The learning rate is constant during learning."
     );
 
     public static final Option SGD_MAX_ITER = new Option(
