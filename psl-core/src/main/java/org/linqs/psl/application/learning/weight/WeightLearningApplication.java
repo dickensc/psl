@@ -214,7 +214,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
             // Independently fix a proportion of the targets.
             if (RandUtils.nextFloat() > trainSampleProportion) {
                 // Fix as observed atom.
-                if (atom instanceof RandomVariableAtom) {
+                if (atom instanceof RandomVariableAtom && (trainingMap.getLabelMap().get(atom) != null)) {
                     targets[i] = trainingMap.getLabelMap().get(atom);
                     targetValues[i] = targets[i].getValue();
                 }
