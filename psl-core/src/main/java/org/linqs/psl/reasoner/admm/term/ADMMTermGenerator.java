@@ -24,6 +24,7 @@ import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * A TermGenerator for ADMM objective terms.
@@ -44,7 +45,12 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
 
     @Override
     public int createLossTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+            boolean isHinge, boolean isSquared, GroundRule groundRule, List<Hyperplane<LocalVariable>> hyperplanes) {
+        if (hyperplanes.size() != 1) {
+            throw new UnsupportedOperationException("ADMM Terms do not support compositions of hyperplanes.");
+        }
+        Hyperplane<LocalVariable> hyperplane = hyperplanes.get(0);
+
         if (isHinge && isSquared) {
             newTerms.add(ADMMObjectiveTerm.createSquaredHingeLossTerm(hyperplane, groundRule.getRule()));
         } else if (isHinge && !isSquared) {
@@ -60,7 +66,12 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
 
     @Override
     public int createLinearConstraintTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
-            GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
+            GroundRule groundRule, List<Hyperplane<LocalVariable>> hyperplanes, FunctionComparator comparator) {
+        if (hyperplanes.size() != 1) {
+            throw new UnsupportedOperationException("ADMM Terms do not support compositions of hyperplanes.");
+        }
+        Hyperplane<LocalVariable> hyperplane = hyperplanes.get(0);
+
         newTerms.add(ADMMObjectiveTerm.createLinearConstraintTerm(hyperplane, groundRule.getRule(), comparator));
         return 1;
     }

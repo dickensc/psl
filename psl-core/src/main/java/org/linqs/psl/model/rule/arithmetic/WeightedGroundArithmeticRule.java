@@ -22,7 +22,8 @@ import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.function.AbstractFunction;
+import org.linqs.psl.reasoner.function.HingeFunction;
 
 import java.util.List;
 
@@ -70,8 +71,8 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
-        GeneralFunction sum = new GeneralFunction(true, isSquared(), coefficients.length, mergeConstants);
+    public AbstractFunction getFunctionDefinition(boolean mergeConstants) {
+        AbstractFunction sum = new HingeFunction(coefficients.length, isSquared(), mergeConstants);
 
         float termSign = FunctionComparator.GTE.equals(comparator) ? -1.0f : 1.0f;
         for (int i = 0; i < coefficients.length; i++) {

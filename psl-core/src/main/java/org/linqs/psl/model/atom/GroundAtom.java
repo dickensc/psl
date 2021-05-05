@@ -20,7 +20,7 @@ package org.linqs.psl.model.atom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.VariableTypeMap;
-import org.linqs.psl.reasoner.function.FunctionTerm;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 
 /**
@@ -28,7 +28,7 @@ import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
  *
  * A GroundAtom has a truth value.
  */
-public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm, ReasonerLocalVariable {
+public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, GeneralFunction, ReasonerLocalVariable {
     protected float value;
 
     protected GroundAtom(Predicate predicate, Constant[] args, float value) {
@@ -50,8 +50,62 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
     }
 
     @Override
-    public boolean isLinear() {
-        return true;
+    public float getValue(GroundAtom replacementAtom, float replacementValue) {
+        if (this == replacementAtom) {
+            return replacementAtom.getValue();
+        }
+        return getValue();
+    }
+
+    @Override
+    public float getValue(float[] values) {
+        if (values.length != 1) {
+            throw new IndexOutOfBoundsException();
+        }
+        return getValue();
+    }
+
+    @Override
+    public float getConstant() {
+        return 0.0f;
+    }
+
+    @Override
+    public boolean isSquared() {
+        return false;
+    }
+
+    @Override
+    public void setSquared(boolean squared) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void add(float value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void add(float coefficient, GeneralFunction term) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int size() {
+        return 1;
+    }
+
+    @Override
+    public float getCoefficient(int index) {
+        return 1.0f;
+    }
+
+    @Override
+    public GeneralFunction getTerm(int index) {
+        if (index != 1) {
+            throw new IndexOutOfBoundsException();
+        }
+        return this;
     }
 
     public String toStringWithValue() {

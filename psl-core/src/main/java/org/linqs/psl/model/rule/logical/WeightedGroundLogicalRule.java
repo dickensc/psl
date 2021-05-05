@@ -23,7 +23,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.function.AbstractFunction;
 import org.linqs.psl.util.IteratorUtils;
 
 import java.util.List;
@@ -56,13 +56,13 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
+    public AbstractFunction getFunctionDefinition(boolean mergeConstants) {
         // We have already built the function for this ground rule with merged constants.
         if (mergeConstants) {
             return dissatisfaction;
         }
 
-        GeneralFunction function = getFunction(false);
+        AbstractFunction function = getFunction(false);
         function.setSquared(((WeightedLogicalRule)rule).isSquared());
 
         return function;

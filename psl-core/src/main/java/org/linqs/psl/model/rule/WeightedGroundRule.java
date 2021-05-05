@@ -18,7 +18,7 @@
 package org.linqs.psl.model.rule;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.function.AbstractFunction;
 
 public interface WeightedGroundRule extends GroundRule {
     @Override
@@ -39,12 +39,12 @@ public interface WeightedGroundRule extends GroundRule {
     public void setWeight(float weight);
 
     /**
-     * Get a GeneralFunction representation of this ground rule.
+     * Get a AbstractFunction representation of this ground rule.
      * If mergeConstants is true, then don't merge together constant terms.
      * Merging terms is generally encouraged, but certain inference methods
      * may need direct access to these terms.
      */
-    public GeneralFunction getFunctionDefinition(boolean mergeConstants);
+    public AbstractFunction getFunctionDefinition(boolean mergeConstants);
 
     /**
      * Returns the incompatibility of the truth values of this GroundRule's GroundAtoms.

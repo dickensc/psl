@@ -21,9 +21,10 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
+import org.linqs.psl.reasoner.function.AbstractFunction;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.function.LinearFunction;
 
 import java.util.List;
 
@@ -75,7 +76,7 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
     @Override
     public ConstraintTerm getConstraintDefinition(boolean mergeConstants) {
-        GeneralFunction sum = new GeneralFunction(false, false, coefficients.length, mergeConstants);
+        AbstractFunction sum = new LinearFunction(coefficients.length, false, mergeConstants);
 
         for (int i = 0; i < coefficients.length; i++) {
             // Skip any grounding only predicates.

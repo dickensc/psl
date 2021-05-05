@@ -26,7 +26,7 @@ public interface UnweightedGroundRule extends GroundRule {
     public UnweightedRule getRule();
 
     /**
-     * Get a GeneralFunction representation of this ground rule.
+     * Get a AbstractFunction representation of this ground rule.
      * If mergeConstants is true, then don't merge together constant terms.
      * Merging terms is generally encouraged, but certain inference methods
      * may need direct access to these terms.

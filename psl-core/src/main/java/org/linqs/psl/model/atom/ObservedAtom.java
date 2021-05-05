@@ -19,6 +19,7 @@ package org.linqs.psl.model.atom;
 
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 
 /**
  * A {@link GroundAtom} with a fixed truth value.

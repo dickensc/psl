@@ -21,6 +21,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
@@ -31,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * A TermGenerator for DCD objective terms.
@@ -56,8 +58,12 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
 
     @Override
     public int createLossTerm(Collection<DCDObjectiveTerm> newTerms, TermStore <DCDObjectiveTerm, GroundAtom> baseTermStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
+            boolean isHinge, boolean isSquared, GroundRule groundRule, List<Hyperplane<GroundAtom>> hyperplanes) {
         VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
+        if (hyperplanes.size() != 1) {
+            throw new UnsupportedOperationException("ADMM Terms do not support compositions of hyperplanes.");
+        }
+        Hyperplane<GroundAtom> hyperplane = hyperplanes.get(0);
 
         if (isHinge && isSquared) {
             newTerms.add(new DCDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), true, hyperplane, c));
@@ -76,7 +82,7 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
 
     @Override
     public int createLinearConstraintTerm(Collection<DCDObjectiveTerm> newTerms, TermStore<DCDObjectiveTerm, GroundAtom> termStore,
-            GroundRule groundRule, Hyperplane<GroundAtom> hyperplane, FunctionComparator comparator) {
+            GroundRule groundRule, List<Hyperplane<GroundAtom>> hyperplanes, FunctionComparator comparator) {
         log.warn("DCD does not support hard constraints, i.e. " + groundRule);
         return 0;
     }

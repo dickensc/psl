@@ -157,14 +157,6 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         return variables;
     }
 
-    /**
-     * Get the number of variables in this term.
-     */
-    @Override
-    public int size() {
-        return size;
-    }
-
     @Override
     public void adjustConstant(float oldValue, float newValue) {
         constant = constant - oldValue + newValue;

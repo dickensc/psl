@@ -27,6 +27,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,44 +38,47 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private boolean hinge;
 
     private WeightedRule rule;
-    private float constant;
+    private float[] constant;
 
-    private short size;
-    private float[] coefficients;
-    private int[] variableIndexes;
+    private short[] size;
+    private float[][] coefficients;
+    private int[][] variableIndexes;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared, boolean hinge,
-            Hyperplane<GroundAtom> hyperplane) {
+            List<Hyperplane<GroundAtom>> hyperplanes) {
         this.squared = squared;
         this.hinge = hinge;
 
         this.rule = rule;
 
-        size = (short)hyperplane.size();
-        coefficients = hyperplane.getCoefficients();
-        constant = hyperplane.getConstant();
+        size = new short[hyperplanes.size()];
+        constant = new float[hyperplanes.size()];
+        coefficients = new float[hyperplanes.size()][];
+        variableIndexes = new int[hyperplanes.size()][];
 
-        variableIndexes = new int[size];
-        GroundAtom[] variables = hyperplane.getVariables();
-        for (int i = 0; i < size; i++) {
-            variableIndexes[i] = termStore.getVariableIndex(variables[i]);
+        for (int i = 0; i < hyperplanes.size(); i++) {
+            Hyperplane<GroundAtom> hyperplane = hyperplanes.get(i);
+            size[i] = (short)hyperplane.size();
+            coefficients[i] = hyperplane.getCoefficients();
+            constant[i] = hyperplane.getConstant();
+
+            variableIndexes[i] = new int[size[i]];
+            GroundAtom[] variables = hyperplane.getVariables();
+            for (int j = 0; j < size[i]; j++) {
+                variableIndexes[i][j] = termStore.getVariableIndex(variables[j]);
+            }
         }
     }
 
     @Override
-    public int size() {
-        return size;
-    }
-
-    @Override
     public void adjustConstant(float oldValue, float newValue) {
-        constant = constant - oldValue + newValue;
+        constant[0] = constant[0] - oldValue + newValue;
     }
 
     public float evaluate(float[] variableValues) {
-        float dot = dot(variableValues);
+        float dot = dot(variableValues)[0];
         float weight = rule.getWeight();
 
         if (squared && hinge) {
@@ -104,27 +108,43 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         float variableStep = 0.0f;
         float newValue = 0.0f;
         float partial = 0.0f;
+        int maxTerm = -1;
+        float maxValue = Float.NEGATIVE_INFINITY;
 
         GroundAtom[] variableAtoms = termStore.getVariableAtoms();
         float[] variableValues = termStore.getVariableValues();
-        float dot = dot(variableValues);
+        float[] dots = dot(variableValues);
 
-        for (int i = 0 ; i < size; i++) {
-            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+        for (int i = 0; i < dots.length; i ++) {
+            if (dots[i] > maxValue) {
+                maxValue = dots[i];
+                maxTerm = i;
+            }
+        }
+
+        for (int i = 0 ; i < size[maxTerm]; i++) {
+            if (variableAtoms[variableIndexes[maxTerm][i]] instanceof ObservedAtom) {
                 continue;
             }
 
-            partial = computePartial(i, dot, rule.getWeight());
-            variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial,
+            partial = computePartial(i, dots[maxTerm], rule.getWeight());
+            variableStep = computeVariableStep(variableIndexes[maxTerm][i], iteration, learningRate, partial,
                     accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
                     sgdExtension);
 
-            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
-            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
-            variableValues[variableIndexes[i]] = newValue;
+            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[maxTerm][i]] - variableStep));
+            movement += Math.abs(newValue - variableValues[variableIndexes[maxTerm][i]]);
+            variableValues[variableIndexes[maxTerm][i]] = newValue;
 
             if (coordinateStep) {
-                dot = dot(variableValues);
+                maxValue = Float.NEGATIVE_INFINITY;
+                dots = dot(variableValues);
+                for (int j = 0; j < dots.length; j ++) {
+                    if (dots[j] > maxValue) {
+                        maxValue = dots[j];
+                        maxTerm = j;
+                    }
+                }
             }
         }
 
@@ -194,20 +214,23 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
 
         if (squared) {
-            return weight * 2.0f * dot * coefficients[varId];
+            return weight * 2.0f * dot * coefficients[0][varId];
         }
 
-        return weight * coefficients[varId];
+        return weight * coefficients[0][varId];
     }
 
-    private float dot(float[] variableValues) {
-        float value = 0.0f;
+    private float[] dot(float[] variableValues) {
+        float[] values = new float[size.length];
 
-        for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variableValues[variableIndexes[i]];
+        for (int i = 0; i < size.length; i++) {
+            for (int j = 0; j < size[i]; j++) {
+                values[i] += coefficients[i][j] * variableValues[variableIndexes[i][j]];
+            }
+            values[i] -= constant[0];
         }
 
-        return value - constant;
+        return values;
     }
 
     /**
@@ -215,13 +238,17 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      * This is just all the member datum.
      */
     public int fixedByteSize() {
-        int bitSize =
-            Byte.SIZE  // squared
-            + Byte.SIZE  // hinge
-            + Integer.SIZE  // rule hash
-            + Float.SIZE  // constant
-            + Short.SIZE  // size
-            + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
+        int bitSize = 0;
+
+        bitSize += Byte.SIZE  // squared
+                + Byte.SIZE  // hinge
+                + Integer.SIZE; // rule hash
+
+        for (int i = 0; i < size.length; i++) {
+            bitSize += Float.SIZE  // constant
+                    + Short.SIZE  // size
+                    + size[i] * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
+        }
 
         return bitSize / 8;
     }
@@ -231,15 +258,18 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      * Note that the variableIndexes are written using the term store indexing.
      */
     public void writeFixedValues(ByteBuffer fixedBuffer) {
-        fixedBuffer.put((byte)(squared ? 1 : 0));
-        fixedBuffer.put((byte)(hinge ? 1 : 0));
+        fixedBuffer.put((byte) (squared ? 1 : 0));
+        fixedBuffer.put((byte) (hinge ? 1 : 0));
         fixedBuffer.putInt(System.identityHashCode(rule));
-        fixedBuffer.putFloat(constant);
-        fixedBuffer.putShort(size);
 
-        for (int i = 0; i < size; i++) {
-            fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putInt(variableIndexes[i]);
+        for (int i = 0; i < size.length; i++) {
+            fixedBuffer.putFloat(constant[i]);
+            fixedBuffer.putShort(size[i]);
+
+            for (int j = 0; j < size[i]; j++) {
+                fixedBuffer.putFloat(coefficients[i][j]);
+                fixedBuffer.putInt(variableIndexes[i][j]);
+            }
         }
     }
 
@@ -250,18 +280,21 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         squared = (fixedBuffer.get() == 1);
         hinge = (fixedBuffer.get() == 1);
         rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());
-        constant = fixedBuffer.getFloat();
-        size = fixedBuffer.getShort();
 
-        // Make sure that there is enough room for all these variables.
-        if (coefficients.length < size) {
-            coefficients = new float[size];
-            variableIndexes = new int[size];
-        }
+        for (int i = 0; i < size.length; i++) {
+            constant[i] = fixedBuffer.getFloat();
+            size[i] = fixedBuffer.getShort();
 
-        for (int i = 0; i < size; i++) {
-            coefficients[i] = fixedBuffer.getFloat();
-            variableIndexes[i] = fixedBuffer.getInt();
+            // Make sure that there is enough room for all these variables.
+            if (coefficients[i].length < size[i]) {
+                coefficients[i] = new float[size[i]];
+                variableIndexes[i] = new int[size[i]];
+            }
+
+            for (int j = 0; j < size[i]; j++) {
+                coefficients[i][j] = fixedBuffer.getFloat();
+                variableIndexes[i][j] = fixedBuffer.getInt();
+            }
         }
     }
 
@@ -275,41 +308,52 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(rule.getWeight());
-        builder.append(" * ");
-
-        if (hinge) {
-            builder.append("max(0.0, ");
-        } else {
-            builder.append("(");
+        if (size.length > 1) {
+            builder.append("max{");
         }
 
-        for (int i = 0; i < size; i++) {
-            builder.append("(");
-            builder.append(coefficients[i]);
+        for (int i=0; i < size.length; i++) {
+            builder.append(rule.getWeight());
+            builder.append(" * ");
 
-            if (termStore == null) {
-                builder.append(" * <index:");
-                builder.append(variableIndexes[i]);
-                builder.append(">)");
+            if (hinge) {
+                builder.append("max(0.0, ");
             } else {
-                builder.append(" * ");
-                builder.append(termStore.getVariableValue(variableIndexes[i]));
-                builder.append(")");
+                builder.append("(");
             }
 
-            if (i != size - 1) {
-                builder.append(" + ");
+            for (int j = 0; j < size[i]; j++) {
+                builder.append("(");
+                builder.append(coefficients[i][j]);
+
+                if (termStore == null) {
+                    builder.append(" * <index:");
+                    builder.append(variableIndexes[i][j]);
+                    builder.append(">)");
+                } else {
+                    builder.append(" * ");
+                    builder.append(termStore.getVariableValue(variableIndexes[i][j]));
+                    builder.append(")");
+                }
+
+                if (j != size[i] - 1) {
+                    builder.append(" + ");
+                }
             }
+
+            builder.append(" - ");
+            builder.append(constant[i]);
+
+            builder.append(")");
+
+            if (squared) {
+                builder.append(" ^2");
+            }
+            builder.append(", ");
         }
 
-        builder.append(" - ");
-        builder.append(constant);
-
-        builder.append(")");
-
-        if (squared) {
-            builder.append(" ^2");
+        if (size.length > 1) {
+            builder.append("}");
         }
 
         return builder.toString();

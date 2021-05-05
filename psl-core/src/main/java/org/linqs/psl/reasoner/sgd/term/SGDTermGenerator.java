@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * A TermGenerator for SGD objective terms.
@@ -52,15 +53,15 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
 
     @Override
     public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
+            boolean isHinge, boolean isSquared, GroundRule groundRule, List<Hyperplane<GroundAtom>> hyperplanes) {
         VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
-        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane));
+        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplanes));
         return 1;
     }
 
     @Override
     public int createLinearConstraintTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> termStore,
-            GroundRule groundRule, Hyperplane<GroundAtom> hyperplane, FunctionComparator comparator) {
+            GroundRule groundRule, List<Hyperplane<GroundAtom>> hyperplanes, FunctionComparator comparator) {
         log.warn("SGD does not support hard constraints, i.e. " + groundRule);
         return 0;
     }

@@ -110,11 +110,6 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     }
 
     @Override
-    public int size() {
-        return size;
-    }
-
-    @Override
     public void adjustConstant(float oldValue, float newValue) {
         constant = constant - oldValue + newValue;
     }

@@ -234,6 +234,12 @@ public class Options {
         "Whether the current build of PSL was made in a dirty git repository."
     );
 
+    public static final Option GodelNegation = new Option(
+        "abstractgroundlogicalrule.godelnegation",
+        false,
+        "If true, then when negating use Godel conjunctions."
+    );
+
     public static final Option WLA_GPP_EARLY_STOPPING = new Option(
         "gpp.earlyStopping",
         true,

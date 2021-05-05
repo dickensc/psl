@@ -28,8 +28,10 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.function.HingeFunction;
+import org.linqs.psl.reasoner.function.LinearFunction;
+import org.linqs.psl.reasoner.function.MaxFunction;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
@@ -152,33 +154,36 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     public int createTerm(GroundRule groundRule, TermStore<T, V> termStore,
             Collection<T> newTerms, Collection<Hyperplane> newHyperplane) {
         int count = 0;
-        Hyperplane<V> hyperplane = null;
+        List<Hyperplane<V>> hyperplanes = null;
 
         if (groundRule instanceof WeightedGroundRule) {
             GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition(mergeConstants);
-            hyperplane = processHyperplane(function, termStore);
-            if (hyperplane == null) {
+            hyperplanes = processHyperplanes(function, termStore);
+            if (hyperplanes == null) {
                 return 0;
             }
 
             // Non-negative functions have a hinge.
-            count = createLossTerm(newTerms, termStore, function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
+            count = createLossTerm(newTerms, termStore, function instanceof HingeFunction, function.isSquared(), groundRule, hyperplanes);
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition(mergeConstants);
             GeneralFunction function = constraint.getFunction();
-            hyperplane = processHyperplane(function, termStore);
-            if (hyperplane == null) {
+            hyperplanes = processHyperplanes(function, termStore);
+            if (hyperplanes == null) {
                 return 0;
             }
 
-            hyperplane.setConstant((float)(constraint.getValue() + hyperplane.getConstant()));
-            count = createLinearConstraintTerm(newTerms, termStore, groundRule, hyperplane, constraint.getComparator());
+            for (Hyperplane<V> hyperplane: hyperplanes) {
+                hyperplane.setConstant((float)(constraint.getValue() + hyperplane.getConstant()));
+            }
+
+            count = createLinearConstraintTerm(newTerms, termStore, groundRule, hyperplanes, constraint.getComparator());
         } else {
             throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
         }
 
         if (newHyperplane != null && count > 0) {
-            newHyperplane.add(hyperplane);
+            newHyperplane.addAll(hyperplanes);
         }
 
         return count;
@@ -188,59 +193,80 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * Construct a hyperplane from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    private Hyperplane<V> processHyperplane(GeneralFunction sum, TermStore<T, V> termStore) {
-        Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant());
+    private List<Hyperplane<V>> processHyperplanes(GeneralFunction generalFunction, TermStore<T, V> termStore) {
+        List<Hyperplane<V>> hyperplanes = null;
+        GeneralFunction[] sums = null;
 
-        for (int i = 0; i < sum.size(); i++) {
-            float coefficient = (float)sum.getCoefficient(i);
-            FunctionTerm term = sum.getTerm(i);
+        if (generalFunction instanceof LinearFunction) {
+            hyperplanes = new ArrayList<Hyperplane<V>>(1);
+            sums = new GeneralFunction[1];
+            sums[0] = generalFunction;
+        } else if (generalFunction instanceof MaxFunction) {
+            hyperplanes = new ArrayList<Hyperplane<V>>(generalFunction.size());
+            sums = ((MaxFunction)generalFunction).getTerms();
+        } else {
+            throw new IllegalArgumentException();
+        }
 
-            if ((term instanceof RandomVariableAtom) && (((RandomVariableAtom)term).getPredicate().isFixedMirror())) {
-                // These types of RVAs get treated as observations and integrated into the constant.
+        for (GeneralFunction sum : sums) {
+            Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float) sum.getConstant());
 
-                // Subtract because hyperplane is stored as coeffs^T * x = constant.
-                hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
+            for (int i = 0; i < sum.size(); i++) {
+                float coefficient = (float) sum.getCoefficient(i);
+                GeneralFunction term = sum.getTerm(i);
 
-                // Negate the coefficient so that "incorporating" this term would mean adding it,
-                // and "removing" this term would be subtracting.
-                hyperplane.addIntegratedRVA((RandomVariableAtom)term, -coefficient);
-            } else if ((term instanceof RandomVariableAtom) || (!mergeConstants && term instanceof ObservedAtom)) {
-                V variable = termStore.createLocalVariable((GroundAtom)term);
+                if ((term instanceof RandomVariableAtom) && (((RandomVariableAtom) term).getPredicate().isFixedMirror())) {
+                    // These types of RVAs get treated as observations and integrated into the constant.
 
-                // Check to see if we have seen this variable before in this hyperplane.
-                // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
-                // variables per hyperplane.
-                int localIndex = hyperplane.indexOfVariable(variable);
-                if (localIndex != -1) {
-                    // If this function came from a logical rule
-                    // and the sign of the current coefficient and the coefficient of this variable do not match,
-                    // then this term is trivial.
-                    // Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
-                    // A mismatch in signs for the same variable means that a ground atom appeared twice,
-                    // once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
-                    if (sum.isNonNegative() && !MathUtils.signsMatch(hyperplane.getCoefficient(localIndex), coefficient)) {
-                        return null;
+                    // Subtract because hyperplane is stored as coeffs^T * x = constant.
+                    hyperplane.setConstant(hyperplane.getConstant() - (float) (coefficient * term.getValue()));
+
+                    // Negate the coefficient so that "incorporating" this term would mean adding it,
+                    // and "removing" this term would be subtracting.
+                    hyperplane.addIntegratedRVA((RandomVariableAtom) term, -coefficient);
+                } else if ((term instanceof RandomVariableAtom) || (!mergeConstants && term instanceof ObservedAtom)) {
+                    V variable = termStore.createLocalVariable((GroundAtom) term);
+
+                    // Check to see if we have seen this variable before in this hyperplane.
+                    // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
+                    // variables per hyperplane.
+                    int localIndex = hyperplane.indexOfVariable(variable);
+                    if (localIndex != -1) {
+                        // If this function came from a logical rule
+                        // and the sign of the current coefficient and the coefficient of this variable do not match,
+                        // then this term is trivial.
+                        // Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
+                        // A mismatch in signs for the same variable means that a ground atom appeared twice,
+                        // once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
+                        if (sum instanceof HingeFunction && !MathUtils.signsMatch(hyperplane.getCoefficient(localIndex), coefficient)) {
+                            hyperplane = null;
+                            break;
+                        }
+
+                        // If the local variable already exists, just add to its coefficient.
+                        hyperplane.appendCoefficient(localIndex, coefficient);
+                    } else {
+                        hyperplane.addTerm(variable, coefficient);
                     }
-
-                    // If the local variable already exists, just add to its coefficient.
-                    hyperplane.appendCoefficient(localIndex, coefficient);
+                } else if (term.isConstant()) {
+                    // Subtract because hyperplane is stored as coeffs^T * x = constant.
+                    hyperplane.setConstant(hyperplane.getConstant() - (float) (coefficient * term.getValue()));
                 } else {
-                    hyperplane.addTerm(variable, coefficient);
+                    throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
                 }
-            } else if (term.isConstant()) {
-                // Subtract because hyperplane is stored as coeffs^T * x = constant.
-                hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
-            } else {
-                throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
+            }
+
+            if (hyperplane != null) {
+                hyperplanes.add(hyperplane);
             }
         }
 
         // This should be caught further up the chain, but we will check for full observed terms.
-        if (hyperplane.size() == 0) {
+        if (hyperplanes.size() == 0) {
             return null;
         }
 
-        return hyperplane;
+        return hyperplanes;
     }
 
     /**
@@ -257,7 +283,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * @return the number of terms added to the supplied collection.
      */
     public abstract int createLossTerm(Collection<T> newTerms, TermStore<T, V> termStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<V> hyperplane);
+            boolean isHinge, boolean isSquared, GroundRule groundRule, List<Hyperplane<V>> hyperplanes);
 
     /**
      * Create a hard constraint term, and add it to the collection of new terms.
@@ -265,5 +291,5 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * @return the number of terms added to the supplied collection.
      */
     public abstract int createLinearConstraintTerm(Collection<T> newTerms, TermStore<T, V> termStore,
-            GroundRule groundRule, Hyperplane<V> hyperplane, FunctionComparator comparator);
+            GroundRule groundRule, List<Hyperplane<V>> hyperplanes, FunctionComparator comparator);
 }

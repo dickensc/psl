@@ -17,12 +17,16 @@
  */
 package org.linqs.psl.model.rule.logical;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.function.AbstractFunction;
+import org.linqs.psl.reasoner.function.HingeFunction;
+import org.linqs.psl.reasoner.function.LinearFunction;
+import org.linqs.psl.reasoner.function.MaxFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.IteratorUtils;
 
@@ -37,12 +41,16 @@ import java.util.Set;
  * Base class for all ground logical rules.
  */
 public abstract class AbstractGroundLogicalRule implements GroundRule {
+    protected static final Boolean GodelNegation = Options.GodelNegation.getBoolean();
+
     protected final AbstractLogicalRule rule;
     protected final List<GroundAtom> posLiterals;
     protected final List<GroundAtom> negLiterals;
-    protected final GeneralFunction dissatisfaction;
+    protected final AbstractFunction dissatisfaction;
 
     private final int hashcode;
+
+    protected Boolean negated;
 
     /**
      * @param posLiterals the positive literals (ground atoms) in the negated DNF.
@@ -55,6 +63,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         this.negLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(negLiterals));
 
         // Construct function definition.
+        negated = false;
         dissatisfaction = getFunction(true);
 
         // Construct the hash code.
@@ -76,12 +85,38 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
      * The function returned from this will never be squared.
      * Child classes that have squaring information are responsible for setting that.
      */
-    protected GeneralFunction getFunction(boolean mergeConstants) {
+    protected AbstractFunction getFunction(boolean mergeConstants) {
+        AbstractFunction function = null;
+
+        if (negated && GodelNegation) {
+            function = new MaxFunction(posLiterals.size() + negLiterals.size(), false, mergeConstants);
+
+            for (int i = 0; i < posLiterals.size(); i++) {
+                LinearFunction linearFunction = new LinearFunction(1, false, mergeConstants);
+                linearFunction.add(-1.0f, posLiterals.get(i));
+                linearFunction.add(1);
+                function.add(1.0f, linearFunction);
+            }
+
+            for (int i = 0; i < negLiterals.size(); i++) {
+                LinearFunction linearFunction = new LinearFunction(1, false, mergeConstants);
+                linearFunction.add(1.0f, negLiterals.get(i));
+                function.add(1.0f, linearFunction);
+            }
+
+            return function;
+        }
+
         // nonNegative refers to having a hinge at 0 (i.e. max(0.0, X)).
         // If there are at least two literals, then there will be a hinge
         // (otherwise it will just be linear).
         boolean nonNegative = (posLiterals.size() + negLiterals.size() > 1);
-        GeneralFunction function = new GeneralFunction(nonNegative, false, posLiterals.size() + negLiterals.size(), mergeConstants);
+        if (nonNegative) {
+            function = new HingeFunction(posLiterals.size() + negLiterals.size(), false, mergeConstants);
+        }
+        else {
+            function = new LinearFunction(posLiterals.size() + negLiterals.size(), false, mergeConstants);
+        }
 
         // Note that the pos/neg qualifier are w.r.t the negated DNF.
         // This means that the potential function being constructed here is actually the
@@ -137,6 +172,14 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
      */
     @Override
     public List<GroundRule> negate() {
+        if (GodelNegation) {
+            negated = true;
+            if (this instanceof WeightedGroundLogicalRule) {
+                ((WeightedGroundLogicalRule)this).setWeight(-1.0f * ((WeightedGroundLogicalRule)this).getWeight());
+            }
+            return Arrays.asList(this);
+        }
+
         int numAtoms = size();
         List<GroundRule> negatedRules = new ArrayList<GroundRule>((int)Math.pow(2, numAtoms) - 1);
 
@@ -208,6 +251,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
             negatedRules.add(instantiateNegatedGroundRule(formula, positiveAtoms, negativeAtoms, name));
         }
+        negated = true;
 
         return negatedRules;
     }

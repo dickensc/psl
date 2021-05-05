@@ -18,7 +18,7 @@
 package org.linqs.psl.model.rule;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.reasoner.function.GeneralFunction;
+import org.linqs.psl.reasoner.function.AbstractFunction;
 
 import java.util.List;
 import java.util.Set;
@@ -61,7 +61,7 @@ public class FakeGroundRule implements WeightedGroundRule {
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
+    public AbstractFunction getFunctionDefinition(boolean mergeConstants) {
         return null;
     }
 
