@@ -39,7 +39,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private float constant;
     private float learningRate;
 
-    private short size;
+    private int size;
     private float[] coefficients;
     private int[] variableIndexes;
 
@@ -54,7 +54,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         this.weight = weight;
         this.learningRate = learningRate;
 
-        size = (short)hyperplane.size();
+        size = hyperplane.size();
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
@@ -391,7 +391,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             + Float.SIZE  // weight
             + Float.SIZE  // constant
             + Float.SIZE  // learningRate
-            + Short.SIZE  // size
+            + Integer.SIZE  // size
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
 
         return bitSize / 8;
@@ -407,7 +407,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         fixedBuffer.putFloat(weight);
         fixedBuffer.putFloat(constant);
         fixedBuffer.putFloat(learningRate);
-        fixedBuffer.putShort(size);
+        fixedBuffer.putInt(size);
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
@@ -424,7 +424,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         weight = fixedBuffer.getFloat();
         constant = fixedBuffer.getFloat();
         learningRate = fixedBuffer.getFloat();
-        size = fixedBuffer.getShort();
+        size = fixedBuffer.getInt();
 
         // Make sure that there is enough room for all these variables.
         if (coefficients.length < size) {
