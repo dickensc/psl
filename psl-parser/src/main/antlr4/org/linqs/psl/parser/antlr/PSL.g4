@@ -154,8 +154,8 @@ unweightedArithmeticRule
 
 arithmeticRuleExpression
     :   linearArithmeticExpression arithmeticRuleRelation linearArithmeticExpression
-    |   MUTUAL_INFORMATION LBRACKET summationAtom COMMA summationAtom RBRACKET
-    |   MUTUAL_INFORMATION LPAREN summationAtom COMMA summationAtom RPAREN
+    |   MUTUAL_INFORMATION LBRACKET summationAtom COMMA summationAtom RBRACKET LESS_THAN_EQUAL coefficient
+    |   MUTUAL_INFORMATION LPAREN summationAtom COMMA summationAtom RPAREN LESS_THAN_EQUAL coefficient
     ;
 
 linearArithmeticExpression

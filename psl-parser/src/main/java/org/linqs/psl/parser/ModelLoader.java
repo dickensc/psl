@@ -439,7 +439,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             // RHS Coefficients are indicated by -1 coefficient.
             List<Coefficient> coefficients = new LinkedList<Coefficient>(
                     Arrays.asList(new ConstantNumber(1.0f), new ConstantNumber(-1.0f)));
-            Coefficient finalCoefficient = new ConstantNumber(0.0f);
+            Coefficient finalCoefficient = visitCoefficient((CoefficientContext)ctx.getChild(7));
             FunctionComparator relationalComparison = FunctionComparator.MI;
 
             return new ArithmeticRuleExpression(coefficients, atoms, relationalComparison, finalCoefficient);

@@ -78,7 +78,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         float dot = dot(variableValues);
 
         if (mutualInformation) {
-            return computeMutualInformation(variableValues, variableAtoms);
+            return Math.max(0.0f, computeMutualInformation(variableValues, variableAtoms));
         } else if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
             return weight * (float)Math.pow(Math.max(0.0f, dot), 2);
@@ -122,16 +122,25 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             float targetProbability = computeTargetProbability(variableValues);
             Map<Constant, Float> attributeConditionedTargetProbability = computeAttributeConditionedTargetProbability(variableAtoms, variableValues, stakeholderAttributeMap);
 
+            if (computeMutualInformation(variableValues, variableAtoms) <= 0) {
+                return movement;
+            }
+
+            float[] steps = new float[size];
+
             for (int i = 0; i < size; i++) {
                 if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+                    steps[i] = 0.0f;
                     continue;
                 }
 
                 float gradient = computeMutualInformationGradient(i, variableAtoms,
                         attributeConditionedTargetProbability, stakeholderAttributeMap, targetProbability);
-                float step = gradient * (learningRate / iteration);
+                steps[i] = gradient * (learningRate / iteration);
+            }
 
-                float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - step));
+            for (int i = 0; i < size; i++) {
+                float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - steps[i]));
                 movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
                 variableValues[variableIndexes[i]] = newValue;
             }
@@ -355,7 +364,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             }
         }
 
-        return mutualInformation;
+        return mutualInformation - constant;
     }
 
     private float computeGradient(int varId, float dot) {
