@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.reasoner.function;
 
-import org.linqs.psl.model.atom.GroundAtom;
-
 /**
  * A general function that can handle various cases.
  * All constant values are merged together into a single constant.

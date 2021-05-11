@@ -46,7 +46,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
     protected final AbstractLogicalRule rule;
     protected final List<GroundAtom> posLiterals;
     protected final List<GroundAtom> negLiterals;
-    protected final AbstractFunction dissatisfaction;
+    protected AbstractFunction dissatisfaction;
 
     private final int hashcode;
 
@@ -174,9 +174,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
     public List<GroundRule> negate() {
         if (GodelNegation) {
             negated = true;
-            if (this instanceof WeightedGroundLogicalRule) {
-                ((WeightedGroundLogicalRule)this).setWeight(-1.0f * ((WeightedGroundLogicalRule)this).getWeight());
-            }
+            this.dissatisfaction = getFunction(true);
             return Arrays.asList(this);
         }
 

@@ -27,6 +27,7 @@ public class LinearFunction extends AbstractFunction {
 
     public LinearFunction(int maxSize, boolean squared, boolean mergeConstants) {
         super(maxSize, squared, mergeConstants);
+        constantTerms = true;
     }
 
     @Override
@@ -63,6 +64,10 @@ public class LinearFunction extends AbstractFunction {
         size++;
 
         constantTerms = constantTerms && term.isConstant();
+    }
+
+    protected void setConstant(float val) {
+        constant = val;
     }
 
     @Override

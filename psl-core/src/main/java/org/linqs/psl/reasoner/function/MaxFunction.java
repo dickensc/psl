@@ -26,6 +26,9 @@ public class MaxFunction extends AbstractFunction {
 
     public MaxFunction(int maxSize, boolean squared, boolean mergeConstants) {
         super(maxSize, squared, mergeConstants);
+        size = 1;
+        terms[0] = new LinearFunction(1, false, mergeConstants);
+        coefficients[0] = 1.0f;
     }
 
     @Override
@@ -39,6 +42,7 @@ public class MaxFunction extends AbstractFunction {
     @Override
     public void add(float value) {
         constant = Math.max(constant, value);
+        ((LinearFunction)terms[0]).setConstant(constant);
     }
 
     /**

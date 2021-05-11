@@ -131,7 +131,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 continue;
             }
 
-            partial = computePartial(i, dots[maxTerm], rule.getWeight());
+            partial = computePartial(maxTerm, i, dots[maxTerm], rule.getWeight());
             variableStep = computeVariableStep(variableIndexes[maxTerm][i], iteration, learningRate, partial,
                     accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
                     sgdExtension);
@@ -208,16 +208,16 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return step;
     }
 
-    private float computePartial(int varId, float dot, float weight) {
+    private float computePartial(int hyperplane, int localVarId, float dot, float weight) {
         if (hinge && dot <= 0.0f) {
             return 0.0f;
         }
 
         if (squared) {
-            return weight * 2.0f * dot * coefficients[0][varId];
+            return weight * 2.0f * dot * coefficients[hyperplane][localVarId];
         }
 
-        return weight * coefficients[0][varId];
+        return weight * coefficients[hyperplane][localVarId];
     }
 
     private float[] dot(float[] variableValues) {

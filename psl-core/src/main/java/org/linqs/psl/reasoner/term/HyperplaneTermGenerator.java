@@ -26,6 +26,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.GeneralFunction;
@@ -52,10 +53,12 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
 
     private boolean mergeConstants;
     private boolean invertNegativeWeight;
+    private boolean godelNegation;
 
     public HyperplaneTermGenerator(boolean mergeConstants) {
         this.mergeConstants = mergeConstants;
         invertNegativeWeight = Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.getBoolean();
+        godelNegation = Options.GodelNegation.getBoolean();
     }
 
     @Override
@@ -77,6 +80,12 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
         }
 
         Parallel.foreach(ruleStore.getGroundRules(), new GeneratorWorker(termStore));
+
+        for (WeightedRule rule : rules) {
+            if ((rule.getWeight() < 0) && (rule instanceof WeightedLogicalRule) && godelNegation) {
+                rule.setWeight(-1.0f * rule.getWeight());
+            }
+        }
 
         return termStore.size() - initialSize;
     }
@@ -196,23 +205,27 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     private List<Hyperplane<V>> processHyperplanes(GeneralFunction generalFunction, TermStore<T, V> termStore) {
         List<Hyperplane<V>> hyperplanes = null;
         GeneralFunction[] sums = null;
+        int n_hyperplanes = 0;
 
         if (generalFunction instanceof LinearFunction) {
-            hyperplanes = new ArrayList<Hyperplane<V>>(1);
+            n_hyperplanes = 1;
+            hyperplanes = new ArrayList<Hyperplane<V>>(n_hyperplanes);
             sums = new GeneralFunction[1];
             sums[0] = generalFunction;
         } else if (generalFunction instanceof MaxFunction) {
+            n_hyperplanes = generalFunction.size();
             hyperplanes = new ArrayList<Hyperplane<V>>(generalFunction.size());
             sums = ((MaxFunction)generalFunction).getTerms();
         } else {
             throw new IllegalArgumentException();
         }
 
-        for (GeneralFunction sum : sums) {
+        for (int j = 0; j < n_hyperplanes; j++) {
+            GeneralFunction sum = sums[j];
             Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float) sum.getConstant());
 
             for (int i = 0; i < sum.size(); i++) {
-                float coefficient = (float) sum.getCoefficient(i);
+                float coefficient = sum.getCoefficient(i);
                 GeneralFunction term = sum.getTerm(i);
 
                 if ((term instanceof RandomVariableAtom) && (((RandomVariableAtom) term).getPredicate().isFixedMirror())) {
@@ -250,7 +263,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                     }
                 } else if (term.isConstant()) {
                     // Subtract because hyperplane is stored as coeffs^T * x = constant.
-                    hyperplane.setConstant(hyperplane.getConstant() - (float) (coefficient * term.getValue()));
+                    hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
                 } else {
                     throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
                 }
