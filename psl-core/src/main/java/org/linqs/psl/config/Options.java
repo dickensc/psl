@@ -679,6 +679,7 @@ public class Options {
         "search.negativeweights",
         false,
         "Whether to include negative weights in search."
+    );
 
     public static final Option SGD_ADAM_BETA_1 = new Option(
         "sgd.adambeta1",
