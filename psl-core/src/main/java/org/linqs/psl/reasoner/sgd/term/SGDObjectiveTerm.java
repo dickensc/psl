@@ -26,6 +26,8 @@ import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -227,7 +229,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             for (int j = 0; j < size[i]; j++) {
                 values[i] += coefficients[i][j] * variableValues[variableIndexes[i][j]];
             }
-            values[i] -= constant[0];
+            values[i] -= constant[i];
         }
 
         return values;
