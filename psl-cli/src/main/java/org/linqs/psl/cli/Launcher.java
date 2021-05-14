@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
+
 import java.util.Set;
 
 /**
@@ -199,16 +201,15 @@ public class Launcher {
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
-        inferenceApplication.close();
         log.info("Inference Complete");
 
         // Output the results.
         if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
-            log.trace("Writing inferred predicates to out stream.");
+            log.info("Writing inferred predicates to stdout.");
             database.outputRandomVariableAtoms();
         } else {
             String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
-            log.info("Writing inferred predicates to file: " + outputDirectoryPath);
+            log.info("Writing inferred predicates to directory: " + outputDirectoryPath);
             database.outputRandomVariableAtoms(outputDirectoryPath);
         }
 
@@ -334,14 +335,17 @@ public class Launcher {
         return model;
     }
 
-    private void runOnlineClient() {
-        log.info("Starting OnlinePSL client.");
-        OnlineClient.run(System.in, System.out);
-        log.info("OnlinePSL client closed.");
-    }
+    private void run() {
+        log.info("Running PSL CLI Version {}", Version.getFull());
+        DataStore dataStore = initDataStore();
 
-    private void runPSL(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-        // Run inference.
+        // Load data
+        Set<StandardPredicate> closedPredicates = loadData(dataStore);
+
+        // Load model
+        Model model = loadModel();
+
+        // Inference
         Database evalDB = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
             evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
@@ -351,7 +355,7 @@ public class Launcher {
             throw new IllegalArgumentException("No valid operation provided.");
         }
 
-        // Run evaluation.
+        // Evaluation
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
             for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
                 evaluation(dataStore, evalDB, closedPredicates, evaluator);
@@ -363,31 +367,8 @@ public class Launcher {
         if (evalDB != null) {
             evalDB.close();
         }
-    }
 
-    private void run() {
-        DataStore dataStore = null;
-        Set<StandardPredicate> closedPredicates = null;
-        Model model = null;
-
-        log.info("Running PSL CLI Version {}", Version.getFull());
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
-            runOnlineClient();
-        } else {
-            dataStore = initDataStore();
-
-            // Load the data.
-            closedPredicates = loadData(dataStore);
-
-            // Load the model.
-            model = loadModel();
-
-            // Run PSL.
-            runPSL(model, dataStore, closedPredicates);
-
-            dataStore.close();
-        }
+        dataStore.close();
     }
 
     private static boolean isCommandLineValid(CommandLine givenOptions) {
@@ -397,11 +378,7 @@ public class Launcher {
             return false;
         }
 
-        // Return early in case of OnlinePSL client.
-        if (givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
-            return true;
-        }
-
+        // Data and model are required.
         // (We don't enforce them earlier so we can have successful runs with help and version.)
         HelpFormatter helpFormatter = new HelpFormatter();
         if (!givenOptions.hasOption(CommandLineLoader.OPTION_DATA)) {
@@ -415,8 +392,7 @@ public class Launcher {
             return false;
         }
 
-        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) &&
-                !givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
+        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) && (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN))) {
             System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPERATION_INFER_LONG, CommandLineLoader.OPERATION_INFER));
             helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;

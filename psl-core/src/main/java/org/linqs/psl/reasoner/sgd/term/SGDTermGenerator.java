@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -30,13 +29,13 @@ import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+
 /**
  * A TermGenerator for SGD objective terms.
  */
 public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(SGDTermGenerator.class);
-
-    private float learningRate;
 
     public SGDTermGenerator() {
         this(true);
@@ -44,8 +43,6 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
 
     public SGDTermGenerator(boolean mergeConstants) {
         super(mergeConstants);
-
-        learningRate = Options.SGD_LEARNING_RATE.getFloat();
     }
 
     @Override
@@ -54,17 +51,17 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     }
 
     @Override
-    public SGDObjectiveTerm createLossTerm(TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
+    public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
             boolean isHinge, boolean isSquared, boolean isMutualInformation, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
         VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
-        return new SGDObjectiveTerm(termStore, isSquared, isHinge, isMutualInformation, hyperplane, weight, learningRate);
+        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, isMutualInformation, hyperplane));
+        return 1;
     }
 
     @Override
-    public SGDObjectiveTerm createLinearConstraintTerm(TermStore<SGDObjectiveTerm, GroundAtom> termStore,
+    public int createLinearConstraintTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> termStore,
             GroundRule groundRule, Hyperplane<GroundAtom> hyperplane, FunctionComparator comparator) {
         log.warn("SGD does not support hard constraints, i.e. " + groundRule);
-        return null;
+        return 0;
     }
 }

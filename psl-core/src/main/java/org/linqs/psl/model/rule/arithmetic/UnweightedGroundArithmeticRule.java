@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,12 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
         implements UnweightedGroundRule {
 
     protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Float> coefficients,
-            List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+                                             List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
         super(rule, coefficients, atoms, comparator, constant);
     }
 
     protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, float[] coefficients,
-            GroundAtom[] atoms, FunctionComparator comparator, float constant) {
+                                             GroundAtom[] atoms, FunctionComparator comparator, float constant) {
         super(rule, coefficients, atoms, comparator, constant);
     }
 
@@ -75,7 +75,8 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
 
     @Override
     public ConstraintTerm getConstraintDefinition(boolean mergeConstants) {
-        GeneralFunction sum = new GeneralFunction(false, false, coefficients.length, !(FunctionComparator.MI.equals(comparator)) && mergeConstants);
+        GeneralFunction sum = new GeneralFunction(false, false, coefficients.length, mergeConstants);
+
         for (int i = 0; i < coefficients.length; i++) {
             // Skip any grounding only predicates.
             if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {

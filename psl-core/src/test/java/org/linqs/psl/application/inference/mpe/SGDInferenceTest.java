@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,35 +17,23 @@
  */
 package org.linqs.psl.application.inference.mpe;
 
-import org.junit.Test;
-import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.InferenceTest;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 
 import org.junit.After;
-import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
-import org.linqs.psl.model.rule.arithmetic.expression.*;
-import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
-import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
-import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.sgd.SGDReasoner;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
 
 public class SGDInferenceTest extends InferenceTest {
     @After
     public void cleanup() {
         Options.SGD_LEARNING_RATE.clear();
+        Options.SGD_COORDINATE_STEP.clear();
+        Options.SGD_EXTENSION.clear();
     }
 
     @Override
@@ -55,52 +43,39 @@ public class SGDInferenceTest extends InferenceTest {
 
     @Override
     public void initialValueTest() {
+        // SGD Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
         super.initialValueTest();
-    }
 
-    /**
-     * Test mutual information rule
-     */
-    @Test
-    public void testArithmeticMI() {
-        TestModel.ModelInformation info = TestModel.getModel();
+        // SGD Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
+        super.initialValueTest();
 
-        Rule rule;
-        List<Coefficient> coefficients;
-        List<SummationAtomOrAtom> atoms;
+        cleanup();
 
-        coefficients = Arrays.asList(
-                (Coefficient)(new ConstantNumber(1.0f)),
-                (Coefficient)(new ConstantNumber(-1.0f))
-        );
+        // Adam.
+        Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.ADAM);
+        // Non-coordinate step.
+        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.initialValueTest();
 
-        atoms = Arrays.asList(
-                (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Buys"),
-                        new SummationVariableOrTerm[]{new SummationVariable("A"), new Variable("B")}
-                )), (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Gender"),
-                        new SummationVariableOrTerm[]{new SummationVariable("C"), new SummationVariable("D")}
-                ))
-        );
+        // Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
+        super.initialValueTest();
 
-        rule = new WeightedArithmeticRule(
-                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.MI, new ConstantNumber(0.0f)),
-                1.0f,
-                false
-        );
+        cleanup();
 
-        // Buys(+A, B) MI Gender(+C, +D)
-        info.model.clear();
-        info.model.addRule(rule);
+        // AdaGrad.
+        Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.ADAGRAD);
+        // Non-coordinate step.
+        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.initialValueTest();
 
-        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
-
-        double objective = inference.inference();
-        inference.close();
-        inferDB.close();
-
-        assertEquals(0.0, objective, 0.2);
+        // Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
+        super.initialValueTest();
     }
 }

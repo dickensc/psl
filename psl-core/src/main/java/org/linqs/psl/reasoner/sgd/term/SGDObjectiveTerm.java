@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,42 +17,57 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.LinkedList;
+import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
  */
 public class SGDObjectiveTerm implements ReasonerTerm  {
+    private static final Logger log = LoggerFactory.getLogger(SGDReasoner.class);
+
+    public static final float EPSILON = 1.0e-8f;
+    public static final float ADAM_BETA1 = Options.SGD_ADAM_BETA_1.getFloat();
+    public static final float ADAM_BETA2 = Options.SGD_ADAM_BETA_2.getFloat();
+
     private boolean squared;
     private boolean hinge;
     private boolean mutualInformation;
 
-    private float weight;
+    private WeightedRule rule;
     private float constant;
-    private float learningRate;
 
     private int size;
     private float[] coefficients;
     private int[] variableIndexes;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+            WeightedRule rule,
             boolean squared, boolean hinge, boolean mutualInformation,
-            Hyperplane<GroundAtom> hyperplane,
-            float weight, float learningRate) {
+            Hyperplane<GroundAtom> hyperplane) {
         this.squared = squared;
         this.hinge = hinge;
         this.mutualInformation = mutualInformation;
 
-        this.weight = weight;
-        this.learningRate = learningRate;
+        this.rule = rule;
 
         size = hyperplane.size();
         coefficients = hyperplane.getCoefficients();
@@ -74,8 +89,14 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
+    @Override
+    public void adjustConstant(float oldValue, float newValue) {
+        constant = constant - oldValue + newValue;
+    }
+
     public float evaluate(float[] variableValues, GroundAtom[] variableAtoms) {
         float dot = dot(variableValues);
+        float weight = rule.getWeight();
 
         if (mutualInformation) {
             return Math.max(0.0f, computeMutualInformation(variableValues, variableAtoms));
@@ -97,11 +118,17 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(int iteration, VariableTermStore termStore) {
+    public float minimize(int iteration, VariableTermStore termStore, float learningRate,
+           float[] accumulatedGradientSquares, float[] accumulatedGradientMean, float[] accumulatedGradientVariance,
+           SGDReasoner.SGDExtension sgdExtension, boolean coordinateStep) {
         float movement = 0.0f;
+        float variableStep = 0.0f;
+        float newValue = 0.0f;
+        float partial = 0.0f;
 
         GroundAtom[] variableAtoms = termStore.getVariableAtoms();
         float[] variableValues = termStore.getVariableValues();
+        float dot = dot(variableValues);
 
         if (!mutualInformation) {
             for (int i = 0; i < size; i++) {
@@ -109,13 +136,18 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                     continue;
                 }
 
-                float dot = dot(variableValues);
-                float gradient = computeGradient(i, dot);
-                float gradientStep = gradient * (learningRate / iteration);
+                partial = computePartial(i, dot, rule.getWeight());
+                variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial,
+                        accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
+                        sgdExtension);
 
-                float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - gradientStep));
+                newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
                 movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
                 variableValues[variableIndexes[i]] = newValue;
+
+                if (coordinateStep) {
+                    dot = dot(variableValues);
+                }
             }
         } else {
             Map<Constant, List<Constant>> stakeholderAttributeMap = computeStakeholderAttributeMap(variableAtoms, variableValues);
@@ -134,13 +166,15 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                     continue;
                 }
 
-                float gradient = computeMutualInformationGradient(i, variableAtoms,
+                partial = computeMutualInformationGradient(i, variableAtoms,
                         attributeConditionedTargetProbability, stakeholderAttributeMap, targetProbability);
-                steps[i] = gradient * (learningRate / iteration);
+                steps[i] = computeVariableStep(variableIndexes[i], iteration, learningRate, partial,
+                        accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
+                        sgdExtension);
             }
 
             for (int i = 0; i < size; i++) {
-                float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - steps[i]));
+                newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - steps[i]));
                 movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
                 variableValues[variableIndexes[i]] = newValue;
             }
@@ -151,7 +185,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     private Map<Constant, List<Constant>> computeStakeholderAttributeMap(GroundAtom[] variableAtoms, float[] variableValues) {
         Map<Constant, List<Constant>> stakeholderAttributeMap = new HashMap<Constant, List<Constant>>();
-
         for (int i = 0; i < size; i++) {
             if (coefficients[i] == 1) {
                 // LHS Atom
@@ -367,7 +400,60 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return mutualInformation - constant;
     }
 
-    private float computeGradient(int varId, float dot) {
+    /**
+     * Compute the step for a single variable according SGD or one of it's extensions.
+     * For details on the math behind the SGD extensions see the corresponding papers listed below:
+     *  - AdaGrad: https://jmlr.org/papers/volume12/duchi11a/duchi11a.pdf
+     *  - Adam: https://arxiv.org/pdf/1412.6980.pdf
+     */
+    private float computeVariableStep(
+            int variableIndex, int iteration, float learningRate, float partial,
+            float[] accumulatedGradientSquares, float[] accumulatedGradientMean, float[] accumulatedGradientVariance,
+            SGDReasoner.SGDExtension sgdExtension) {
+        float step = 0.0f;
+        float adaptedLearningRate = 0.0f;
+
+        switch (sgdExtension) {
+            case NONE:
+                step = partial * learningRate;
+                break;
+            case ADAGRAD:
+                if (accumulatedGradientSquares.length <= variableIndex) {
+                    accumulatedGradientSquares = Arrays.copyOf(accumulatedGradientSquares, (variableIndex + 1) * 2);
+                }
+                accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + partial * partial;
+
+                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares[variableIndex] + EPSILON);
+                step = partial * adaptedLearningRate;
+                break;
+            case ADAM:
+                float biasedGradientMean = 0.0f;
+                float biasedGradientVariance = 0.0f;
+
+                if (accumulatedGradientMean.length  <= variableIndex) {
+                    accumulatedGradientMean = Arrays.copyOf(accumulatedGradientMean, (variableIndex + 1) * 2);
+                }
+                accumulatedGradientMean[variableIndex] = ADAM_BETA1 * accumulatedGradientMean[variableIndex] + (1.0f - ADAM_BETA1) * partial;
+
+                if (accumulatedGradientVariance.length <= variableIndex) {
+                    accumulatedGradientVariance = Arrays.copyOf(accumulatedGradientVariance, (variableIndex + 1) * 2);
+                }
+                accumulatedGradientVariance[variableIndex] = ADAM_BETA2 * accumulatedGradientVariance[variableIndex]
+                            + (1.0f - ADAM_BETA2) * partial * partial;
+
+                biasedGradientMean = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA1, iteration));
+                biasedGradientVariance = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA2, iteration));
+                adaptedLearningRate = learningRate / ((float)Math.sqrt(biasedGradientVariance) + EPSILON);
+                step = biasedGradientMean * adaptedLearningRate;
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
+        }
+
+        return step;
+    }
+
+    private float computePartial(int varId, float dot, float weight) {
         if (hinge && dot <= 0.0f) {
             return 0.0f;
         }
@@ -397,9 +483,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         int bitSize =
             Byte.SIZE  // squared
             + Byte.SIZE  // hinge
-            + Float.SIZE  // weight
+            + Integer.SIZE  // rule hash
             + Float.SIZE  // constant
-            + Float.SIZE  // learningRate
             + Integer.SIZE  // size
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
 
@@ -413,9 +498,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
         fixedBuffer.put((byte)(hinge ? 1 : 0));
-        fixedBuffer.putFloat(weight);
+        fixedBuffer.putInt(System.identityHashCode(rule));
         fixedBuffer.putFloat(constant);
-        fixedBuffer.putFloat(learningRate);
         fixedBuffer.putInt(size);
 
         for (int i = 0; i < size; i++) {
@@ -430,9 +514,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer) {
         squared = (fixedBuffer.get() == 1);
         hinge = (fixedBuffer.get() == 1);
-        weight = fixedBuffer.getFloat();
+        rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());
         constant = fixedBuffer.getFloat();
-        learningRate = fixedBuffer.getFloat();
         size = fixedBuffer.getInt();
 
         // Make sure that there is enough room for all these variables.
@@ -457,7 +540,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(weight);
+        builder.append(rule.getWeight());
         builder.append(" * ");
 
         if (hinge) {

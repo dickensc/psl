@@ -1,4 +1,0 @@
-AddAtom Read Likes('Charles','Surfing') 1.0
-AddRule 5: Likes(P1, L1) & Likes(P2, L2) & (P1 != P2) & (L1 != L2) -> !Knows(P1, P2) ^2
-Stop
-Exit

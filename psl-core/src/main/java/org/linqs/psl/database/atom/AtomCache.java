@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class AtomCache {
 
     protected final Map<QueryAtom, GroundAtom> cache;
 
-    // The number of random variable atoms that have been instantiated.
+    // The number of random variable and observed atoms that have been instantiated.
     private int rvaCount;
     private int obsCount;
 

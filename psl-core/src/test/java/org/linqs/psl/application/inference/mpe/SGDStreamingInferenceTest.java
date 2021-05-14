@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ public class SGDStreamingInferenceTest extends InferenceTest {
     @After
     public void cleanup() {
         Options.SGD_LEARNING_RATE.clear();
+        Options.SGD_COORDINATE_STEP.clear();
+        Options.SGD_EXTENSION.clear();
     }
 
     @Override
@@ -46,7 +48,39 @@ public class SGDStreamingInferenceTest extends InferenceTest {
 
     @Override
     public void initialValueTest() {
+        // SGD Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.initialValueTest();
+
+        // SGD Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
+        super.initialValueTest();
+
+        cleanup();
+
+        // Adam.
+        Options.SGD_EXTENSION.set("ADAM");
+        // Non-coordinate step.
+        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.initialValueTest();
+
+        // Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
+        super.initialValueTest();
+
+        cleanup();
+
+        // AdaGrad.
+        Options.SGD_EXTENSION.set("ADAGRAD");
+        // Non-coordinate step.
+        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.initialValueTest();
+
+        // Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
         super.initialValueTest();
     }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,14 +187,6 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         return cache.getCachedRandomVariableAtoms();
     }
 
-    public int getCachedRVACount() {
-        return cache.getRVACount();
-    }
-
-    public int getCachedObsCount() {
-        return cache.getObsCount();
-    }
-
     public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
         return getAllGroundAtoms(predicate, allPartitionIDs);
     }
@@ -215,11 +207,11 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
         for (GroundAtom atom : groundAtoms) {
             // This is only possible if the predicate is partially observed and this ground atom
-            // was specified as a target and an observation/
+            // was specified as a target and an observation.
             if (atom instanceof ObservedAtom) {
                 throw new IllegalStateException(String.format(
                         "Found a ground atom (%s) that is both observed and a target." +
-                        " An atom can only be one at a time. Check your data files.",
+                                " An atom can only be one at a time. Check your data files.",
                         atom));
             }
 
@@ -244,11 +236,11 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
         for (GroundAtom atom : groundAtoms) {
             // This is only possible if the predicate is partially observed and this ground atom
-            // was specified as a target and an observation.
+            // was specified as a target and an observation/
             if (atom instanceof RandomVariableAtom) {
                 throw new IllegalStateException(String.format(
                         "Found a ground atom (%s) that is both observed and a target." +
-                        " An atom can only be one at a time. Check your data files.",
+                                " An atom can only be one at a time. Check your data files.",
                         atom));
             }
 
@@ -288,10 +280,6 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         return parentDataStore;
     }
 
-    public AtomCache getCache() {
-        return cache;
-    }
-
     public List<Partition> getReadPartitions() {
         return Collections.unmodifiableList(readPartitions);
     }
@@ -321,16 +309,19 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         outputDirectory.mkdirs();
 
         for (StandardPredicate predicate : parentDataStore.getRegisteredPredicates()) {
-            if (getAllGroundRandomVariableAtoms(predicate).size() == 0) {
+            if (isClosed(predicate)) {
                 continue;
             }
 
-            try {
-                FileWriter predFileWriter = new FileWriter(new File(outputDirectory, predicate.getName() + ".txt"));
-                BufferedWriter bufferedPredWriter = new BufferedWriter(predFileWriter);
-                StringBuilder row = new StringBuilder();
+            List<RandomVariableAtom> atoms = getAllGroundRandomVariableAtoms(predicate);
+            if (atoms.size() == 0) {
+                continue;
+            }
 
-                for (GroundAtom atom : getAllGroundRandomVariableAtoms(predicate)) {
+            try (BufferedWriter bufferedPredWriter = new BufferedWriter(
+                    new FileWriter(new File(outputDirectory, predicate.getName() + ".txt")))) {
+                StringBuilder row = new StringBuilder();
+                for (GroundAtom atom : atoms) {
                     row.setLength(0);
 
                     for (Constant term : atom.getArguments()) {
@@ -342,11 +333,17 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
                     bufferedPredWriter.write(row.toString());
                 }
-
-                bufferedPredWriter.close();
             } catch (IOException ex) {
                 throw new RuntimeException("Error writing predicate " + predicate + ".", ex);
             }
         }
+    }
+
+    public int getCachedRVACount() {
+        return cache.getRVACount();
+    }
+
+    public int getCachedObsCount() {
+        return cache.getObsCount();
     }
 }

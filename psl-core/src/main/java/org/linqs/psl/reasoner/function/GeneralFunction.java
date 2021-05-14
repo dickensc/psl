@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,14 +29,11 @@ import org.linqs.psl.model.atom.GroundAtom;
 public class GeneralFunction implements FunctionTerm {
     private final float[] coefficients;
     private final FunctionTerm[] terms;
-
-    /**
-     * Whether to merge fixed values (like observed atoms) into the single constant.
-     */
+    // Whether to merge fixed values (like observed atoms) into the single constant.
     private final boolean mergeConstants;
-  
-    private int size;
-  
+
+    private short size;
+
     // All constants will get merged into this.
     private float constant;
 
@@ -57,7 +54,6 @@ public class GeneralFunction implements FunctionTerm {
         this.nonNegative = nonNegative;
         this.squared = squared;
         this.mergeConstants = mergeConstants;
-
         constantTerms = true;
         linearTerms = true;
     }

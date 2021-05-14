@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getGroundingIterator() {
-        return new SGDStreamingGroundingIterator(
+        return new SGDStreamingInitialRoundIterator(
                 this, rules, atomManager, termGenerator,
                 termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
     }

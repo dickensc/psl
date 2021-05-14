@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,8 @@ package org.linqs.psl.model.predicate;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Term;
-import org.linqs.psl.util.HashCode;
 
-import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +31,7 @@ import java.util.Map;
  * Predicates cannot be constructed directly.
  * Instead, they are constructed via the appropriate gegetthod in each subclass.
  */
-public abstract class Predicate implements Serializable {
+public abstract class Predicate {
     private static Map<String, Predicate> predicates = new HashMap<String, Predicate>();
 
     private final String name;
@@ -60,13 +57,11 @@ public abstract class Predicate implements Serializable {
 
         this.name = name.toUpperCase();
         this.types = types;
+        hashcode = this.name.hashCode();
 
         if (predicates.containsKey(this.name)) {
             throw new RuntimeException("Predicate with name '" + name + "' already exists.");
         }
-
-        hashcode = HashCode.build(HashCode.build(name), types);
-
         predicates.put(this.name, this);
     }
 
@@ -115,10 +110,6 @@ public abstract class Predicate implements Serializable {
         return predicates.get(name.toUpperCase());
     }
 
-    public static Collection<Predicate> getAll() {
-        return predicates.values();
-    }
-
     @Override
     public int hashCode() {
         return hashcode;
@@ -136,8 +127,6 @@ public abstract class Predicate implements Serializable {
 
         Predicate other = (Predicate)oth;
 
-        // First check the hashcode to reduce the time we have to do a deepEquals() on the arguments.
-        // Note that the hashcode is not perfect, but provides a quick insurance on inequality.
         return hashCode() == other.hashCode() && name.equals(other.name) && Arrays.deepEquals(types, other.types);
     }
 

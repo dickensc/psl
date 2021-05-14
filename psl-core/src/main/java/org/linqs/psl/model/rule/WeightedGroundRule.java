@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,9 @@ public interface WeightedGroundRule extends GroundRule {
     public void setWeight(float weight);
 
     /**
-     * Get a mathematical/functional definition of this ground rule.
-     *
-     * If |mergeConstants| is true, then don't merge together constant terms (like observed atoms).
-     * Merging terms is generally encouraged, but certain inference methods (like online inference)
+     * Get a GeneralFunction representation of this ground rule.
+     * If mergeConstants is true, then don't merge together constant terms.
+     * Merging terms is generally encouraged, but certain inference methods
      * may need direct access to these terms.
      */
     public GeneralFunction getFunctionDefinition(boolean mergeConstants);

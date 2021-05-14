@@ -28,13 +28,13 @@ import java.util.List;
 
 public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule implements WeightedGroundRule {
     protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Float> coefficients,
-            List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
+                                           List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
         super(rule, coefficients, atoms, comparator, constant);
         validate();
     }
 
     protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, float[] coefficients, GroundAtom[] atoms,
-            FunctionComparator comparator, float constant) {
+                                           FunctionComparator comparator, float constant) {
         super(rule, coefficients, atoms, comparator, constant);
         validate();
     }

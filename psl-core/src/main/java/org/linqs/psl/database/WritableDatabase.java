@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,13 @@ public interface WritableDatabase {
      * Be careful not to call this while the database is in use.
      */
     public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionID);
+
+    /**
+     * Move all ground atoms of a predicate/partition combination into
+     * the specified partition.
+     * Be careful not to call this while the database is in use.
+     */
+    public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionId);
 
     /**
      * Releases the {@link Partition Partitions} used by this Database.

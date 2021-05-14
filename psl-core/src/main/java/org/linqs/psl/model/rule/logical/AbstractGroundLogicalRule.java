@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.IteratorUtils;
@@ -50,8 +49,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
      * @param negLiterals the negative literals (ground atoms) in the negated DNF.
      * @param rvaCount the number of RandomVariableAtoms (non-constants) in the literals.
      */
-    protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals,
-            short rvaCount) {
+    protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
         this.rule = rule;
         this.posLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(posLiterals));
         this.negLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(negLiterals));
@@ -89,8 +87,8 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         // This means that the potential function being constructed here is actually the
         // ground rule's dissatisfaction.
 
-        for (int i = 0; i < this.posLiterals.size(); i++) {
-            function.add(1.0f, this.posLiterals.get(i));
+        for (int i = 0; i < posLiterals.size(); i++) {
+            function.add(1.0f, posLiterals.get(i));
         }
 
         for (int i = 0; i < this.negLiterals.size(); i++) {
@@ -98,7 +96,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         }
 
         // Adding a constant 1.0 overall and subtracting 1.0 for each positive term (in the negated DNF)
-        // will make this potential function the same as the function of the original (non-negated) ground rule.
+        // will make this potential function the same as the dissatisfaction of the original (non-negated) ground rule.
         function.add(1.0f - this.posLiterals.size());
 
         return function;

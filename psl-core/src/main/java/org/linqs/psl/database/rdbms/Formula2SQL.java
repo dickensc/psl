@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,10 +77,10 @@ public class Formula2SQL {
 
     /**
      * Convert a formula to a query that will fetch all possible combinations of constants used in that
-     * formula (aka grounding).
-     * This variant will enforce unique results (DISTINCT).
+     * formual (aka grounding).
+     * This variant will enforce unqiue results (DISTINCT).
      * @param projection the collection of variables (columns) to return (the variable's name will be used
-     * as the column alias). If not set, all columns (*) will be returned.
+     * as the column alias). If not set, all columns (*) will be retutned.
      * @param database the database to query over. The read and write partitions will be picked up from here.
      */
     public Formula2SQL(Set<Variable> projection, RDBMSDatabase database) {
@@ -98,7 +98,6 @@ public class Formula2SQL {
 
     /**
      * See above description.
-
      * @param partialTargets if this is non-null, then this formula will be treated as a partial grounding query.
      * This means that we will treat special partitions (with a negative id) as valid partitions,
      * and these atoms will be exclusively drawn from the special partitions.
@@ -166,11 +165,11 @@ public class Formula2SQL {
         } else if (atom.getPredicate() instanceof GroundingOnlyPredicate) {
             GroundingOnlyPredicate predicate = (GroundingOnlyPredicate)atom.getPredicate();
 
-            if (predicate == GroundingOnlyPredicate.NotEqual) {
+            if (predicate.equals(GroundingOnlyPredicate.NotEqual)) {
                 query.addCondition(BinaryCondition.notEqualTo(convert[0], convert[1]));
-            } else if (predicate == GroundingOnlyPredicate.Equal) {
+            } else if (predicate.equals(GroundingOnlyPredicate.Equal)) {
                 query.addCondition(BinaryCondition.equalTo(convert[0], convert[1]));
-            } else if (predicate == GroundingOnlyPredicate.NonSymmetric) {
+            } else if (predicate.equals(GroundingOnlyPredicate.NonSymmetric)) {
                 query.addCondition(BinaryCondition.lessThan(convert[0], convert[1], false));
             } else {
                 throw new UnsupportedOperationException("Unrecognized GroundingOnlyPredicate: " + predicate);
@@ -268,7 +267,7 @@ public class Formula2SQL {
         }
 
         // Make sure to limit the partitions.
-        // Most atoms get to choose from anywhere, partial atoms can only come from the special partitions.
+        // Most atoms get to choose from anywhere, partial target atoms can only come from a special partition.
         CustomSql partitionColumn = new CustomSql(tableAlias + "." + PredicateInfo.PARTITION_COLUMN_NAME);
         if ((partialTargets != null) && (partialTargets.contains(atom))) {
             query.addCondition(BinaryCondition.lessThan(partitionColumn, 0));

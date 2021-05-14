@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,6 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,18 +44,16 @@ import java.util.Set;
  * (Options.LAM_ACTIVATION_THRESHOLD) will be instantiated as real atoms.
  */
 public class LazyAtomManager extends PersistedAtomManager {
-    private static final Logger log = LoggerFactory.getLogger(LazyAtomManager.class);
-
     /**
      * All the ground atoms that have been seen, but not instantiated.
      */
     private final Set<RandomVariableAtom> lazyAtoms;
     private final double activation;
 
-    public LazyAtomManager(Database database) {
-        super(database);
+    public LazyAtomManager(Database db) {
+        super(db);
 
-        if (!(database instanceof RDBMSDatabase)) {
+        if (!(db instanceof RDBMSDatabase)) {
             throw new IllegalArgumentException("LazyAtomManagers require RDBMSDatabase.");
         }
 
@@ -68,7 +63,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
     @Override
     public synchronized GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-        GroundAtom atom = database.getAtom(predicate, arguments);
+        GroundAtom atom = db.getAtom(predicate, arguments);
         if (!(atom instanceof RandomVariableAtom)) {
             return atom;
         }
@@ -154,7 +149,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
     private void activate(Set<RandomVariableAtom> toActivate, List<Rule> rules, GroundRuleStore groundRuleStore) {
         // First commit the atoms to the database.
-        database.commit(toActivate, Partition.SPECIAL_WRITE_ID);
+        db.commit(toActivate, Partition.SPECIAL_WRITE_ID);
 
         // Also ensure that the activated atoms are now considered "persisted" by the atom manager.
         addToPersistedCache(toActivate);
@@ -164,7 +159,7 @@ public class LazyAtomManager extends PersistedAtomManager {
         // Collect the specific predicates that are targets in this lazy batch
         // and the rules associated with those predicates.
         Set<StandardPredicate> lazyPredicates = PartialGrounding.getPartialPredicates(toActivate);
-        Set<? extends Rule> lazyRules = PartialGrounding.getPartialRules(rules, lazyPredicates);
+        Set<Rule> lazyRules = PartialGrounding.getPartialRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
             // We will deal with these rules after we move the lazy atoms to the write partition.
@@ -175,7 +170,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
         // Move all the new atoms out of the lazy partition and into the write partition.
         for (StandardPredicate lazyPredicate : lazyPredicates) {
-            database.moveToPartition(lazyPredicate, Partition.SPECIAL_WRITE_ID, database.getWritePartition().getID());
+            db.moveToWritePartition(lazyPredicate, Partition.SPECIAL_WRITE_ID);
         }
 
         // Since complex aritmetic rules require a full regound, we need to do them

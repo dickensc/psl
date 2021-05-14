@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,18 @@
 package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.QueryResultIterable;
-import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Attribute;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.DoubleAttribute;
@@ -47,14 +43,6 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.util.Parallel;
 
-import com.healthmarketscience.sqlbuilder.BinaryCondition;
-import com.healthmarketscience.sqlbuilder.CustomSql;
-import com.healthmarketscience.sqlbuilder.InCondition;
-import com.healthmarketscience.sqlbuilder.InsertQuery;
-import com.healthmarketscience.sqlbuilder.QueryPreparer;
-import com.healthmarketscience.sqlbuilder.SelectQuery;
-import com.healthmarketscience.sqlbuilder.UpdateQuery;
-import com.healthmarketscience.sqlbuilder.DeleteQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +52,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -93,8 +80,8 @@ public class RDBMSDatabase extends Database {
     private int fetchSize;
 
     public RDBMSDatabase(RDBMSDataStore parent,
-            Partition write, Partition[] read,
-            Set<StandardPredicate> closed) {
+                         Partition write, Partition[] read,
+                         Set<StandardPredicate> closed) {
         super(parent, write, read);
 
         fetchSize = Options.RDBMS_FETCH_SIZE.getInt();
@@ -153,8 +140,8 @@ public class RDBMSDatabase extends Database {
         }
 
         try (
-            Connection connection = getConnection();
-            PreparedStatement statement = getAtomDelete(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()), atom.getArguments());
+                Connection connection = getConnection();
+                PreparedStatement statement = getAtomDelete(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()), atom.getArguments());
         ) {
             if (statement.executeUpdate() > 0) {
                 return true;
@@ -233,12 +220,17 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionID) {
+    public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId) {
+        moveToPartition(predicate, oldPartitionId, writeID);
+    }
+
+    @Override
+    public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionId) {
         PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
         try (
-            Connection connection = getConnection();
-            PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, newPartitionID);
+                Connection connection = getConnection();
+                PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, newPartitionId);
         ) {
             statement.executeUpdate();
         } catch (SQLException ex) {
@@ -396,7 +388,7 @@ public class RDBMSDatabase extends Database {
     }
 
     private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
-        PreparedStatement statement = predicate.createDeleteStatement(connection, allPartitionIDs);
+        PreparedStatement statement = predicate.createDeleteStatement(connection, writeID);
 
         try {
             for (int i = 0; i < arguments.length; i++) {
@@ -520,9 +512,9 @@ public class RDBMSDatabase extends Database {
      */
     private GroundAtom queryDBForAtom(StandardPredicate predicate, Constant[] arguments) {
         try (
-            Connection conn = getConnection();
-            PreparedStatement statement = getAtomQuery(conn, ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate), arguments);
-            ResultSet resultSet = statement.executeQuery();
+                Connection conn = getConnection();
+                PreparedStatement statement = getAtomQuery(conn, ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate), arguments);
+                ResultSet resultSet = statement.executeQuery();
         ) {
             if (!resultSet.next()) {
                 return null;
@@ -550,9 +542,9 @@ public class RDBMSDatabase extends Database {
         Constant[] arguments = new Constant[argumentCols.size()];
 
         try (
-            Connection connection = getConnection();
-            PreparedStatement statement = predicateInfo.createQueryAllStatement(connection, partitions);
-            ResultSet results = statement.executeQuery();
+                Connection connection = getConnection();
+                PreparedStatement statement = predicateInfo.createQueryAllStatement(connection, partitions);
+                ResultSet results = statement.executeQuery();
         ) {
             while (results.next()) {
                 for (int i = 0; i < argumentCols.size(); i++) {
@@ -574,9 +566,9 @@ public class RDBMSDatabase extends Database {
         PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
         try (
-            Connection connection = getConnection();
-            PreparedStatement statement = predicateInfo.createCountAllStatement(connection, partitions);
-            ResultSet results = statement.executeQuery();
+                Connection connection = getConnection();
+                PreparedStatement statement = predicateInfo.createCountAllStatement(connection, partitions);
+                ResultSet results = statement.executeQuery();
         ) {
             if (!results.next()) {
                 throw new RuntimeException("No results from a COUNT(*)");

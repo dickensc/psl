@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public abstract class InferenceApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
 
     protected List<Rule> rules;
-    protected Database database;
+    protected Database db;
     protected Reasoner reasoner;
     protected InitialValue initialValue;
 
@@ -70,13 +70,13 @@ public abstract class InferenceApplication implements ModelApplication {
 
     private boolean atomsCommitted;
 
-    protected InferenceApplication(List<Rule> rules, Database database) {
-        this(rules, database, Options.INFERENCE_RELAX.getBoolean());
+    protected InferenceApplication(List<Rule> rules, Database db) {
+        this(rules, db, Options.INFERENCE_RELAX.getBoolean());
     }
 
-    protected InferenceApplication(List<Rule> rules, Database database, boolean relaxHardConstraints) {
+    protected InferenceApplication(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         this.rules = new ArrayList<Rule>(rules);
-        this.database = database;
+        this.db = db;
         this.atomsCommitted = false;
 
         this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
@@ -94,7 +94,7 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void initialize() {
         log.debug("Creating persisted atom manager.");
-        atomManager = createAtomManager(database);
+        atomManager = createAtomManager(db);
         log.debug("Atom manager initialization complete.");
 
         initializeAtoms();
@@ -117,8 +117,8 @@ public abstract class InferenceApplication implements ModelApplication {
         completeInitialize();
     }
 
-    protected PersistedAtomManager createAtomManager(Database database) {
-        return new PersistedAtomManager(database, false, initialValue);
+    protected PersistedAtomManager createAtomManager(Database db) {
+        return new PersistedAtomManager(db, false, initialValue);
     }
 
     protected GroundRuleStore createGroundRuleStore() {
@@ -265,7 +265,7 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         rules = null;
-        database = null;
+        db = null;
     }
 
     /**
@@ -336,7 +336,7 @@ public abstract class InferenceApplication implements ModelApplication {
      * Construct an inference application given the data.
      * Look for a constructor like: (List<Rule>, Database).
      */
-    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database database) {
+    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database db) {
         className = Reflection.resolveClassName(className);
 
         Class<? extends InferenceApplication> classObject = null;
@@ -357,7 +357,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
         InferenceApplication inferenceApplication = null;
         try {
-            inferenceApplication = constructor.newInstance(rules, database);
+            inferenceApplication = constructor.newInstance(rules, db);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate inference application (" + className + ")", ex);
         } catch (IllegalAccessException ex) {

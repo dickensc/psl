@@ -1,7 +1,7 @@
 /**
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,10 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected List<T> termCache;
     protected List<T> termPool;
 
+    // Since a ground rule can produce multiple terms,
+    // we need to keep multiple terms until they are officially passed out the iterator.
+    private List<T> newTerms;
+
     protected ByteBuffer termBuffer;
     protected ByteBuffer volatileBuffer;
 
@@ -71,7 +75,11 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected int pageSize;
     protected int nextPage;
 
+<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
     public StreamingGroundingIterator(
+=======
+    public StreamingInitialRoundIterator(
+>>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
             StreamingTermStore<T> parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
@@ -80,7 +88,11 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, 0);
     }
 
+<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
     public StreamingGroundingIterator(
+=======
+    public StreamingInitialRoundIterator(
+>>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
             StreamingTermStore<T> parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
@@ -97,6 +109,11 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
         this.termCache = termCache;
         this.termPool = termPool;
+<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
+=======
+
+        newTerms = new ArrayList<T>();
+>>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
 
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
@@ -165,26 +182,47 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             flushCache();
         }
 
-        T term = fetchNextTermFromRule();
-        if (term != null) {
+        // If there are no terms already waiting, then fetch the next one(s).
+        if (newTerms.size() == 0) {
+            fetchNextTermFromRule();
+        }
+
+        // Pick off the next waiting term.
+        T term = null;
+        if (newTerms.size() > 0) {
+            term = newTerms.remove(0);
+
+            termCache.add(term);
             termCount++;
+        }
+
+        // If the size of this page is ever larger than the size of the pool, then set aside the term for reuse.
+        if (term != null && termCache.size() > termPool.size()) {
+            termPool.add(term);
         }
 
         return term;
     }
 
-    private T fetchNextTermFromRule() {
+    /**
+     * Go through the next ground rules and look for terms.
+     * The results will be loaded into |newTerms|.
+     * |newTerms| will be cleared and may be empty after the call if no more terms are available.
+     */
+    private void fetchNextTermFromRule() {
+        newTerms.clear();
+
         // Note that it is possible to not get a term from a ground rule.
-        T term = null;
-        while (term == null) {
+        while (newTerms.size() == 0) {
             GroundRule groundRule = fetchNextGroundRule();
             if (groundRule == null) {
                 // We are out of ground rules, and therefore out of terms.
-                return null;
+                return;
             }
 
-            term = termGenerator.createTerm(groundRule, parentStore);
+            termGenerator.createTerm(groundRule, parentStore, newTerms, null);
         }
+<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
 
         termCache.add(term);
 
@@ -194,6 +232,8 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         }
 
         return term;
+=======
+>>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
     }
 
     private GroundRule fetchNextGroundRule() {
@@ -240,7 +280,11 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         queryResults = queryIterable.iterator();
     }
 
+<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
     private void flushCache() {
+=======
+    protected void flushCache() {
+>>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
         // It is possible to get two flush requests in a row, so check to see if we actually need it.
         if (termCache.size() == 0) {
             return;
@@ -270,7 +314,11 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             queryResults = null;
         }
 
+<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
         // All the terms have been iterated over and the volitile buffer has been flushed,
+=======
+        // All the terms have been iterated over and the volatile buffer has been flushed,
+>>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
         // the term cache is now invalid.
         termCache.clear();
 

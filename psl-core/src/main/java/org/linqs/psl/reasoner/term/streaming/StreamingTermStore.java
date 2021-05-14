@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
@@ -123,7 +123,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected int[] shuffleMap;
 
     public StreamingTermStore(List<Rule> rules, AtomManager atomManager,
-            HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
+                              HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
         pageSize = Options.STREAMING_TS_PAGE_SIZE.getInt();
         pageDir = Options.STREAMING_TS_PAGE_LOCATION.getString();
         shufflePage = Options.STREAMING_TS_SHUFFLE_PAGE.getBoolean();
@@ -232,16 +232,21 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public void syncAtoms() {
+    public double syncAtoms() {
+        double movement = 0.0;
+
         for (int i = 0; i < totalVariableCount; i++) {
             if (variableAtoms[i] == null) {
                 continue;
             }
 
             if (variableAtoms[i] instanceof RandomVariableAtom) {
+                movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
                 ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
             }
         }
+
+        return Math.sqrt(movement);
     }
 
     @Override
@@ -312,7 +317,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public void add(GroundRule rule, T term) {
+    public void add(GroundRule rule, T term, Hyperplane hyperplane) {
         throw new UnsupportedOperationException();
     }
 
@@ -329,6 +334,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public String getTermPagePath(int index) {
         // Make sure the path is built.
         for (int i = termPagePaths.size(); i <= index; i++) {
+            // Creating new term page path.
             termPagePaths.add(Paths.get(pageDir, String.format("%08d_term.page", i)).toString());
         }
 
@@ -338,6 +344,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public String getVolatilePagePath(int index) {
         // Make sure the path is built.
         for (int i = volatilePagePaths.size(); i <= index; i++) {
+            // Creating new volatile page path.
             volatilePagePaths.add(Paths.get(pageDir, String.format("%08d_volatile.page", i)).toString());
         }
 
@@ -520,15 +527,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
 
         return true;
-    }
-
-    /**
-     * Return true if the given term read from the cache is invalid.
-     * Under normal streaming circumstances this cannot happen,
-     * but children may encounter different situations (like online inference where atoms can be deleted).
-     */
-    public boolean rejectCacheTerm(T term) {
-        return false;
     }
 
     /**

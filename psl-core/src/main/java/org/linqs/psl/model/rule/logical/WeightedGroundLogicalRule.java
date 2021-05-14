@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import java.util.List;
 
 public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule implements WeightedGroundRule {
     protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
-            List<GroundAtom> negLiterals, short rvaCount) {
+                                        List<GroundAtom> negLiterals, short rvaCount) {
         super(rule, posLiterals, negLiterals, rvaCount);
         dissatisfaction.setSquared(rule.isSquared());
     }
@@ -57,8 +57,7 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 
     @Override
     public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
-        // We have already built the function for this ground rule by merging constants.
-        // If we want that one, return it right away.
+        // We have already built the function for this ground rule with merged constants.
         if (mergeConstants) {
             return dissatisfaction;
         }
