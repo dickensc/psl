@@ -37,7 +37,7 @@ import java.util.List;
  * This will typically be the first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public abstract class StreamingGroundingIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
+public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
     // How much to over-allocate by.
     public static final double OVERALLOCATION_RATIO = 1.25;
 
@@ -75,11 +75,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected int pageSize;
     protected int nextPage;
 
-<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
-    public StreamingGroundingIterator(
-=======
     public StreamingInitialRoundIterator(
->>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
             StreamingTermStore<T> parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
@@ -88,11 +84,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, 0);
     }
 
-<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
-    public StreamingGroundingIterator(
-=======
     public StreamingInitialRoundIterator(
->>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
             StreamingTermStore<T> parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
@@ -109,11 +101,8 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
         this.termCache = termCache;
         this.termPool = termPool;
-<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
-=======
 
         newTerms = new ArrayList<T>();
->>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
 
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
@@ -222,18 +211,6 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
             termGenerator.createTerm(groundRule, parentStore, newTerms, null);
         }
-<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
-
-        termCache.add(term);
-
-        // Set aside terms for later reuse in the cache iterators.
-        if (termCache.size() > termPool.size()) {
-            termPool.add(term);
-        }
-
-        return term;
-=======
->>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
     }
 
     private GroundRule fetchNextGroundRule() {
@@ -280,11 +257,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         queryResults = queryIterable.iterator();
     }
 
-<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
-    private void flushCache() {
-=======
     protected void flushCache() {
->>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
         // It is possible to get two flush requests in a row, so check to see if we actually need it.
         if (termCache.size() == 0) {
             return;
@@ -314,11 +287,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             queryResults = null;
         }
 
-<<<<<<< HEAD:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingGroundingIterator.java
-        // All the terms have been iterated over and the volitile buffer has been flushed,
-=======
         // All the terms have been iterated over and the volatile buffer has been flushed,
->>>>>>> sgd:psl-core/src/main/java/org/linqs/psl/reasoner/term/streaming/StreamingInitialRoundIterator.java
         // the term cache is now invalid.
         termCache.clear();
 

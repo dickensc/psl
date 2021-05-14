@@ -1,7 +1,7 @@
 /**
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
+import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class SGDStreamingGroundingIterator extends StreamingGroundingIterator<SGDObjectiveTerm> {
-    public SGDStreamingGroundingIterator(
+public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundIterator<SGDObjectiveTerm> {
+    public SGDStreamingInitialRoundIterator(
             SGDStreamingTermStore parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> termGenerator,
             List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
@@ -52,7 +52,6 @@ public class SGDStreamingGroundingIterator extends StreamingGroundingIterator<SG
         }
     }
 
-    // HACK(eriq): Copied in SGDOnlineGroundingIterator.
     private void flushTermCache(String termPagePath) {
         // Count the exact size we will need to write.
         int termsSize = 0;

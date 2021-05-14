@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,10 +214,10 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     protected abstract AbstractGroundArithmeticRule makeGroundRule(float[] coefficients,
-            GroundAtom[] atoms, FunctionComparator comparator, float constant);
+                                                                   GroundAtom[] atoms, FunctionComparator comparator, float constant);
 
     protected abstract AbstractGroundArithmeticRule makeGroundRule(List<Float> coefficients,
-            List<GroundAtom> atoms, FunctionComparator comparator, float constant);
+                                                                   List<GroundAtom> atoms, FunctionComparator comparator, float constant);
 
     @Override
     public boolean supportsGroundingQueryRewriting() {
@@ -255,7 +255,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
     @Override
     public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
-            List<GroundRule> results) {
+                       List<GroundRule> results) {
         if (!validatedByAtomManager) {
             validateForGrounding(atomManager);
         }
@@ -268,7 +268,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     private void groundForNonSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
-            List<GroundRule> results) {
+                                       List<GroundRule> results) {
         GroundingResources resources = getGroundingResources(expression);
         groundSingleNonSummationRule(constants, variableMap, atomManager, resources);
 
@@ -278,7 +278,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     private void groundForSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
-            List<GroundRule> results) {
+                                    List<GroundRule> results) {
         if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
             throw new IllegalArgumentException("Can only ground summation arithmetic rules with a relational database.");
         }
@@ -427,7 +427,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             // We will need to check the database for existence if we have an open summation atom.
             boolean checkDatabase =
                     resources.flatSummationAtoms[atomIndex] &&
-                    !atomManager.isClosed((StandardPredicate)resources.queryAtoms.get(atomIndex).getPredicate());
+                            !atomManager.isClosed((StandardPredicate)resources.queryAtoms.get(atomIndex).getPredicate());
 
             boolean skip = false;
             SummationVariable[] variables = resources.flatSummationVariables.get(atomIndex);
@@ -557,16 +557,16 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             return groundAtom.getValue() > 0.0f;
         } else if (filter instanceof Negation) {
             return !evalFilter(
-                ((Negation)filter).getFormula(),
-                summationVariables, variableValues,
-                atomManager, queryRow, variableMap);
+                    ((Negation)filter).getFormula(),
+                    summationVariables, variableValues,
+                    atomManager, queryRow, variableMap);
         } else if (filter instanceof Conjunction) {
             Conjunction conjunction = (Conjunction)filter;
             for (int i = 0; i < conjunction.length(); i++) {
                 boolean value = evalFilter(
-                    conjunction.get(i),
-                    summationVariables, variableValues,
-                    atomManager, queryRow, variableMap);
+                        conjunction.get(i),
+                        summationVariables, variableValues,
+                        atomManager, queryRow, variableMap);
 
                 if (!value) {
                     return false;
@@ -630,10 +630,10 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         if (resources.accessExceptionAtoms.size() != 0) {
             RuntimeException ex = new RuntimeException(String.format(
                     "Found one or more RandomVariableAtoms (target ground atom)" +
-                    " that were not explicitly specified in the targets." +
-                    " Offending atom(s): %s." +
-                    " This typically means that your specified target set is insufficient." +
-                    " This was encountered during the grounding of the rule: [%s].",
+                            " that were not explicitly specified in the targets." +
+                            " Offending atom(s): %s." +
+                            " This typically means that your specified target set is insufficient." +
+                            " This was encountered during the grounding of the rule: [%s].",
                     resources.accessExceptionAtoms, this));
             atomManager.reportAccessException(ex, resources.accessExceptionAtoms.iterator().next());
         }
@@ -653,7 +653,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             if (!expression.getSummationVariables().contains(filterArg)) {
                 throw new IllegalArgumentException(String.format(
                         "Unknown variable (%s) used as filter argument. " +
-                        "All filter arguments must appear as summation variables in associated arithmetic expression.",
+                                "All filter arguments must appear as summation variables in associated arithmetic expression.",
                         filterArg.getVariable().getName()));
             }
         }
@@ -679,8 +679,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                         summationVariableNames.contains(var.getName()))) {
                     throw new IllegalArgumentException(String.format(
                             "Unknown variable (%s) used in filter. " +
-                            "All filter variables must either be the filter argument or appear " +
-                            "in the associated arithmetic expression.",
+                                    "All filter variables must either be the filter argument or appear " +
+                                    "in the associated arithmetic expression.",
                             var.getName()));
                 }
             }
@@ -711,7 +711,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                     && !atomManager.isClosed(((StandardPredicate)filterAtom.getPredicate()))) {
                 throw new IllegalArgumentException(String.format(
                         "Open predicate (%s) not allowed in filter. " +
-                        "Only closed predicates may appear in filters.",
+                                "Only closed predicates may appear in filters.",
                         filterAtom.getPredicate().getName()));
             }
         }
@@ -839,9 +839,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
      * The three output lists will all be the same size and indexes will match up.
      */
     private void flattenAtoms(RDBMSDatabase database,
-            List<SummationAtomOrAtom> flatAtoms,
-            List<Coefficient> flatCoefficients,
-            List<SummationVariable[]> flatSummationVariables) {
+                              List<SummationAtomOrAtom> flatAtoms,
+                              List<Coefficient> flatCoefficients,
+                              List<SummationVariable[]> flatSummationVariables) {
         // All the summation variables mapped to their possible constants.
         Map<SummationVariable, Map<Predicate, ResultList>> summationConstants =
                 fetchSummationConstants(expression.getSummationMapping(), database);
@@ -963,7 +963,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     /**
-     * Resources that every grounding thread will use and reuse.
+     * Resources that every grounding thread and use and reuse.
      */
     private static class GroundingResources {
         // Because multiple ground rules can be generated from a single rule,

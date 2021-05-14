@@ -153,15 +153,6 @@ public class SimpleAcquaintancesTest extends CLITest {
         }
     }
 
-    @Test
-    public void testOnline() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances.txt").toString();
-
-        runOnline(modelPath, dataPath, actionPath);
-    }
-
     // Not an actual similarity.
     public static class SimNameExternalFunction implements ExternalFunction {
         @Override
