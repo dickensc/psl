@@ -19,6 +19,8 @@ package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -31,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Uses an SGD optimization method to optimize its GroundRules.
@@ -94,12 +98,18 @@ public class SGDReasoner extends Reasoner {
         float meanMovement = 0.0f;
         double change = 0.0;
         double objective = 0.0;
+        float newValue = 0.0f;
+        float movement = 0.0f;
+        float variableStep = 0.0f;
+        int variableIndex = -1;
+        float dot = 0.0f;
         // Starting on the second iteration, keep track of the previous iteration's objective value.
         // The variable values from the term store cannot be used to calculate the objective during an
         // optimization pass because they are being updated in the term.minimize() method.
         // Note that the number of variables may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
+        float[] gradient = new float[termStore.getNumRandomVariables()];
 
         float[] accumulatedGradientSquares = null;
         float[] accumulatedGradientMean = null;
@@ -127,7 +137,6 @@ public class SGDReasoner extends Reasoner {
             long start = System.currentTimeMillis();
 
             termCount = 0;
-            meanMovement = 0.0f;
             objective = 0.0;
 
             for (SGDObjectiveTerm term : termStore) {
@@ -135,19 +144,79 @@ public class SGDReasoner extends Reasoner {
                     objective += term.evaluate(oldVariableValues, termStore.getVariableAtoms());
                 }
 
+                dot = term.dot(termStore.getVariableValues());
+
+                if (!term.mutualInformation) {
+                    for (int i = 0; i < term.size(); i++) {
+                        variableIndex = term.variableIndexes[i];
+                        if (termStore.getVariableAtoms()[variableIndex] instanceof ObservedAtom) {
+                            continue;
+                        }
+
+                        if (gradient.length  <= term.variableIndexes[i]) {
+                            gradient = Arrays.copyOf(gradient, (variableIndex + 1) * 2);
+                        }
+                        gradient[term.variableIndexes[i]] = gradient[term.variableIndexes[i]] + term.computePartial(i, dot, term.rule.getWeight());
+                    }
+                } else {
+                    Map<Constant, List<Constant>> stakeholderAttributeMap = term.computeStakeholderAttributeMap(termStore.getVariableAtoms(), termStore.getVariableValues());
+                    float targetProbability = term.computeTargetProbability(termStore.getVariableValues());
+                    Map<Constant, Float> attributeConditionedTargetProbability = term.computeAttributeConditionedTargetProbability(termStore.getVariableAtoms(), termStore.getVariableValues(), stakeholderAttributeMap);
+
+                    if (term.computeMutualInformation(termStore.getVariableValues(), termStore.getVariableAtoms()) <= 0) {
+                        continue;
+                    }
+
+                    for (int i = 0; i < term.size(); i++) {
+                        if (termStore.getVariableAtoms()[term.variableIndexes[i]] instanceof ObservedAtom) {
+                            continue;
+                        }
+
+                        if (gradient.length  <= term.variableIndexes[i]) {
+                            gradient = Arrays.copyOf(gradient, (variableIndex + 1) * 2);
+                        }
+                        gradient[term.variableIndexes[i]]  = gradient[term.variableIndexes[i]] + term.computeMutualInformationGradient(i,
+                                termStore.getVariableAtoms(), attributeConditionedTargetProbability, stakeholderAttributeMap, targetProbability);
+                    }
+                }
+
                 termCount++;
-                meanMovement += term.minimize(iteration, termStore, calculateAnnealedLearningRate(iteration),
+            }
+
+            log.trace("Trace");
+
+            for (int i = 0; i < termStore.getNumVariables(); i++) {
+                switch (sgdExtension) {
+                    case NONE:
+                        break;
+                    case ADAGRAD:
+                        if (accumulatedGradientSquares.length <= variableIndex) {
+                            accumulatedGradientSquares = Arrays.copyOf(accumulatedGradientSquares, (variableIndex + 1) * 2);
+                        }
+                        break;
+                    case ADAM:
+                        if (accumulatedGradientMean.length  <= variableIndex) {
+                            accumulatedGradientMean = Arrays.copyOf(accumulatedGradientMean, (variableIndex + 1) * 2);
+                        }
+                        if (accumulatedGradientVariance.length <= variableIndex) {
+                            accumulatedGradientVariance = Arrays.copyOf(accumulatedGradientVariance, (variableIndex + 1) * 2);
+                        }
+                        break;
+                    default:
+                        throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
+                }
+                variableStep = SGDObjectiveTerm.computeVariableStep(i, iteration, calculateAnnealedLearningRate(iteration), gradient[i],
                         accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
-                        sgdExtension, coordinateStep);
+                        sgdExtension);
+                newValue = Math.max(0.0f, Math.min(1.0f, termStore.getVariableValue(i) - variableStep));
+                movement += Math.abs(newValue - termStore.getVariableValue(i));
+                termStore.getVariableValues()[i] = newValue;
+                gradient[i] = 0.0f;
             }
 
             termStore.iterationComplete();
 
-            if (termCount != 0) {
-                meanMovement /= termCount;
-            }
-
-            converged = breakOptimization(objective, oldObjective, meanMovement, termCount);
+            converged = breakOptimization(objective, oldObjective, movement, termCount);
 
             if (iteration == 1) {
                 // Initialize old variables values.
