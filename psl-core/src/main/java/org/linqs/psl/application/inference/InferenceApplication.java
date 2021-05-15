@@ -106,12 +106,12 @@ public abstract class InferenceApplication implements ModelApplication {
 
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
-        if (relaxHardConstraints) {
-            relaxHardConstraints();
-        }
-
         if (normalizeWeights) {
             normalizeWeights();
+        }
+
+        if (relaxHardConstraints) {
+            relaxHardConstraints();
         }
 
         completeInitialize();
