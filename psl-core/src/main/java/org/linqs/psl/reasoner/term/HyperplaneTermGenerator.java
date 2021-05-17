@@ -81,6 +81,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
 
         Parallel.foreach(ruleStore.getGroundRules(), new GeneratorWorker(termStore));
 
+        // Invert negative Godel term weights once all Godel terms are grounded.
         for (WeightedRule rule : rules) {
             if ((rule.getWeight() < 0) && (rule instanceof WeightedLogicalRule) && godelNegation) {
                 rule.setWeight(-1.0f * rule.getWeight());
