@@ -117,12 +117,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                     rule instanceof WeightedGroundRule
                     && ((WeightedGroundRule)rule).getWeight() < 0.0;
 
-            if (negativeWeight) {
-                // Skip
-                if (!invertNegativeWeight) {
-                    return;
-                }
-
+            if (negativeWeight && invertNegativeWeight) {
                 // Negate (weight and expression) rules that have a negative weight.
                 for (GroundRule negatedRule : rule.negate()) {
                     createTerm(negatedRule, termStore, newTerms, newHyperplane);
