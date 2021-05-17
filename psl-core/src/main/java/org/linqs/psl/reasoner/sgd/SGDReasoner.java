@@ -183,8 +183,6 @@ public class SGDReasoner extends Reasoner {
                 termCount++;
             }
 
-            log.trace("Trace");
-
             for (int i = 0; i < termStore.getNumVariables(); i++) {
                 switch (sgdExtension) {
                     case NONE:

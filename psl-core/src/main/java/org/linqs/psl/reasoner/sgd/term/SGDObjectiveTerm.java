@@ -49,7 +49,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public static final float ADAM_BETA2 = Options.SGD_ADAM_BETA_2.getFloat();
 
     private boolean squared;
-    private boolean hinge;
+    public boolean hinge;
     public boolean mutualInformation;
 
     public WeightedRule rule;
