@@ -49,15 +49,15 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public static final float ADAM_BETA2 = Options.SGD_ADAM_BETA_2.getFloat();
 
     private boolean squared;
-    public boolean hinge;
-    public boolean mutualInformation;
+    private boolean hinge;
+    private boolean mutualInformation;
 
-    public WeightedRule rule;
-    public float constant;
+    private WeightedRule rule;
+    private float constant;
 
     private int size;
-    public float[] coefficients;
-    public int[] variableIndexes;
+    private float[] coefficients;
+    private int[] variableIndexes;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
@@ -183,7 +183,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return movement;
     }
 
-    public Map<Constant, List<Constant>> computeStakeholderAttributeMap(GroundAtom[] variableAtoms, float[] variableValues) {
+    private Map<Constant, List<Constant>> computeStakeholderAttributeMap(GroundAtom[] variableAtoms, float[] variableValues) {
         Map<Constant, List<Constant>> stakeholderAttributeMap = new HashMap<Constant, List<Constant>>();
         for (int i = 0; i < size; i++) {
             if (coefficients[i] == 1) {
@@ -207,7 +207,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return stakeholderAttributeMap;
     }
 
-    public Map<Constant, Float> computeAttributeConditionedTargetProbability(GroundAtom[] variableAtoms, float[] variableValues,
+    private Map<Constant, Float> computeAttributeConditionedTargetProbability(GroundAtom[] variableAtoms, float[] variableValues,
                                                                               Map<Constant, List<Constant>> stakeholderAttributeMap) {
         Map<Constant, Integer> attributeCount = new HashMap<Constant, Integer>();
         Map<Constant, Float> attributeConditionedTargetProbability = new HashMap<Constant, Float>();
@@ -250,7 +250,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return attributeConditionedTargetProbability;
     }
 
-    public Map<Constant, Float> computeAttributeProbability(float[] variableValues, GroundAtom[] variableAtoms,
+    private Map<Constant, Float> computeAttributeProbability(float[] variableValues, GroundAtom[] variableAtoms,
                                                              Map<Constant, List<Constant>> stakeholderAttributeMap) {
         Map<Constant, Float> attributeProbability = new HashMap<Constant, Float>();
         Map<Constant, Integer> attributeCount = new HashMap<Constant, Integer>();
@@ -285,7 +285,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return attributeProbability;
     }
 
-    public float computeTargetProbability(float[] variableValues) {
+    private float computeTargetProbability(float[] variableValues) {
         float targetProbability = 0.0f;
         int stakeholderCount = 0;
 
@@ -302,7 +302,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return targetProbability / (float) stakeholderCount;
     }
 
-    public float computeMutualInformationGradient(int varId, GroundAtom[] variableAtoms,
+    private float computeMutualInformationGradient(int varId, GroundAtom[] variableAtoms,
                                                    Map<Constant, Float> attributeConditionedTargetProbability,
                                                    Map<Constant, List<Constant>> stakeholderAttributeMap,
                                                    float targetProbability) {
@@ -353,7 +353,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return gradient;
     }
 
-    public float computeMutualInformation(float[] variableValues, GroundAtom[] variableAtoms) {
+    private float computeMutualInformation(float[] variableValues, GroundAtom[] variableAtoms) {
         float mutualInformation = 0.0f;
 
         Map<Constant, List<Constant>> stakeholderAttributeMap = computeStakeholderAttributeMap(variableAtoms, variableValues);
@@ -406,7 +406,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      *  - AdaGrad: https://jmlr.org/papers/volume12/duchi11a/duchi11a.pdf
      *  - Adam: https://arxiv.org/pdf/1412.6980.pdf
      */
-    public static float computeVariableStep(
+    private float computeVariableStep(
             int variableIndex, int iteration, float learningRate, float partial,
             float[] accumulatedGradientSquares, float[] accumulatedGradientMean, float[] accumulatedGradientVariance,
             SGDReasoner.SGDExtension sgdExtension) {
@@ -418,6 +418,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 step = partial * learningRate;
                 break;
             case ADAGRAD:
+                if (accumulatedGradientSquares.length <= variableIndex) {
+                    accumulatedGradientSquares = Arrays.copyOf(accumulatedGradientSquares, (variableIndex + 1) * 2);
+                }
                 accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + partial * partial;
 
                 adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares[variableIndex] + EPSILON);
@@ -427,7 +430,14 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 float biasedGradientMean = 0.0f;
                 float biasedGradientVariance = 0.0f;
 
+                if (accumulatedGradientMean.length  <= variableIndex) {
+                    accumulatedGradientMean = Arrays.copyOf(accumulatedGradientMean, (variableIndex + 1) * 2);
+                }
                 accumulatedGradientMean[variableIndex] = ADAM_BETA1 * accumulatedGradientMean[variableIndex] + (1.0f - ADAM_BETA1) * partial;
+
+                if (accumulatedGradientVariance.length <= variableIndex) {
+                    accumulatedGradientVariance = Arrays.copyOf(accumulatedGradientVariance, (variableIndex + 1) * 2);
+                }
                 accumulatedGradientVariance[variableIndex] = ADAM_BETA2 * accumulatedGradientVariance[variableIndex]
                             + (1.0f - ADAM_BETA2) * partial * partial;
 
@@ -443,7 +453,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return step;
     }
 
-    public float computePartial(int varId, float dot, float weight) {
+    private float computePartial(int varId, float dot, float weight) {
         if (hinge && dot <= 0.0f) {
             return 0.0f;
         }
@@ -455,7 +465,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return weight * coefficients[varId];
     }
 
-    public float dot(float[] variableValues) {
+    private float dot(float[] variableValues) {
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
