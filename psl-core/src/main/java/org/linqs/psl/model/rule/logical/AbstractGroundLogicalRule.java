@@ -26,6 +26,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.AbstractFunction;
 import org.linqs.psl.reasoner.function.HingeFunction;
 import org.linqs.psl.reasoner.function.LinearFunction;
+import org.linqs.psl.reasoner.function.MinFunction;
 import org.linqs.psl.reasoner.function.MaxFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.IteratorUtils;
@@ -42,6 +43,7 @@ import java.util.Set;
  */
 public abstract class AbstractGroundLogicalRule implements GroundRule {
     protected static final Boolean GodelNegation = Options.GodelNegation.getBoolean();
+    protected static final Boolean LukasiewiczNegation = Options.LukasiewiczNegation.getBoolean();
 
     protected final AbstractLogicalRule rule;
     protected final List<GroundAtom> posLiterals;
@@ -103,6 +105,23 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
                 linearFunction.add(1.0f, negLiterals.get(i));
                 function.add(1.0f, linearFunction);
             }
+
+            return function;
+        } else if (negated && LukasiewiczNegation) {
+            function = new MinFunction(posLiterals.size() + negLiterals.size(), false, mergeConstants);
+
+            LinearFunction linearFunction = new LinearFunction(posLiterals.size() + negLiterals.size(), false, mergeConstants);
+            for (int i = 0; i < posLiterals.size(); i++) {
+                linearFunction.add(1);
+                linearFunction.add(-1.0f, posLiterals.get(i));
+            }
+
+            for (int i = 0; i < negLiterals.size(); i++) {
+                linearFunction.add(1.0f, negLiterals.get(i));
+            }
+
+            function.add(1.0f);
+            function.add(1.0f, linearFunction);
 
             return function;
         }
@@ -172,9 +191,12 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
      */
     @Override
     public List<GroundRule> negate() {
-        if (GodelNegation) {
+        if (GodelNegation || LukasiewiczNegation) {
             negated = true;
             this.dissatisfaction = getFunction(true);
+            if (this.rule.isWeighted()) {
+                this.dissatisfaction.setSquared(((WeightedLogicalRule)this.rule).isSquared());
+            }
             return Arrays.asList(this);
         }
 

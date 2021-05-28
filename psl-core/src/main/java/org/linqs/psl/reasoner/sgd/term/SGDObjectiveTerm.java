@@ -38,6 +38,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     private boolean squared;
     private boolean hinge;
+    private boolean max;
+    private boolean min;
 
     private WeightedRule rule;
     private float[] constant;
@@ -48,10 +50,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
-            boolean squared, boolean hinge,
+            boolean squared, boolean hinge, boolean max, boolean min,
             List<Hyperplane<GroundAtom>> hyperplanes) {
         this.squared = squared;
         this.hinge = hinge;
+        this.max = max;
+        this.min = min;
 
         this.rule = rule;
 
@@ -80,8 +84,25 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     }
 
     public float evaluate(float[] variableValues) {
-        float dot = dot(variableValues)[0];
+        float[] dots = dot(variableValues);
         float weight = rule.getWeight();
+        float dot = max? Float.NEGATIVE_INFINITY: Float.POSITIVE_INFINITY;
+
+        if (max) {
+            for (int i = 0; i < dots.length; i ++) {
+                if (dots[i] > dot) {
+                    dot = dots[i];
+                }
+            }
+        } else if (min) {
+            for (int i = 0; i < dots.length; i ++) {
+                if (dots[i] < dot) {
+                    dot = dots[i];
+                }
+            }
+        } else {
+            dot = dots[0];
+        }
 
         if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
@@ -107,40 +128,61 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         float variableStep = 0.0f;
         float newValue = 0.0f;
         float partial = 0.0f;
-        int maxTerm = -1;
-        float maxValue = Float.NEGATIVE_INFINITY;
+        int term = -1;
+        float dot = max? Float.NEGATIVE_INFINITY: Float.POSITIVE_INFINITY;
 
         GroundAtom[] variableAtoms = termStore.getVariableAtoms();
         float[] variableValues = termStore.getVariableValues();
         float[] dots = dot(variableValues);
 
-        for (int i = 0; i < dots.length; i ++) {
-            if (dots[i] > maxValue) {
-                maxValue = dots[i];
-                maxTerm = i;
+        if (max) {
+            for (int i = 0; i < dots.length; i ++) {
+                if (dots[i] > dot) {
+                    dot = dots[i];
+                    term = i;
+                }
             }
+        } else if (min) {
+            for (int i = 0; i < dots.length; i ++) {
+                if (dots[i] < dot) {
+                    dot = dots[i];
+                    term = i;
+                }
+            }
+        } else {
+            term = 0;
         }
 
-        for (int i = 0 ; i < size[maxTerm]; i++) {
-            if (variableAtoms[variableIndexes[maxTerm][i]] instanceof ObservedAtom) {
+        for (int i = 0 ; i < size[term]; i++) {
+            if (variableAtoms[variableIndexes[term][i]] instanceof ObservedAtom) {
                 continue;
             }
 
-            partial = computePartial(maxTerm, i, dots[maxTerm], rule.getWeight());
-            variableStep = computeVariableStep(variableIndexes[maxTerm][i], iteration, learningRate, partial, sgdReasoner);
+            partial = computePartial(term, i, dots[term], rule.getWeight());
+            variableStep = computeVariableStep(variableIndexes[term][i], iteration, learningRate, partial, sgdReasoner);
 
-            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[maxTerm][i]] - variableStep));
-            movement += Math.abs(newValue - variableValues[variableIndexes[maxTerm][i]]);
-            variableValues[variableIndexes[maxTerm][i]] = newValue;
+            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[term][i]] - variableStep));
+            movement += Math.abs(newValue - variableValues[variableIndexes[term][i]]);
+            variableValues[variableIndexes[term][i]] = newValue;
 
             if (coordinateStep) {
-                maxValue = Float.NEGATIVE_INFINITY;
-                dots = dot(variableValues);
-                for (int j = 0; j < dots.length; j ++) {
-                    if (dots[j] > maxValue) {
-                        maxValue = dots[j];
-                        maxTerm = j;
+                dot = max? Float.NEGATIVE_INFINITY: Float.POSITIVE_INFINITY;
+                if (max) {
+                    for (int j = 0; j < dots.length; j ++) {
+                        if (dots[j] > dot) {
+                            dot = dots[j];
+                            term = j;
+                        }
                     }
+                } else if (min) {
+                    for (int j = 0; j < dots.length; j ++) {
+                        if (dots[j] < dot) {
+                            dot = dots[j];
+                            term = j;
+                        }
+                    }
+                } else {
+                    term = 0;
                 }
             }
         }

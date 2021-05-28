@@ -45,7 +45,7 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
 
     @Override
     public int createLossTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, List<Hyperplane<LocalVariable>> hyperplanes) {
+            boolean isHinge, boolean isMax, boolean isMin, boolean isSquared, GroundRule groundRule, List<Hyperplane<LocalVariable>> hyperplanes) {
         if (hyperplanes.size() != 1) {
             throw new UnsupportedOperationException("ADMM Terms do not support compositions of hyperplanes.");
         }

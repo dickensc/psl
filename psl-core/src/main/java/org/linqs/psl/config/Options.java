@@ -239,6 +239,12 @@ public class Options {
         "If true, then when negating use Godel conjunctions."
     );
 
+    public static final Option LukasiewiczNegation = new Option(
+            "abstractgroundlogicalrule.lukasiewicznegation",
+            false,
+            "If true, then when negating use Lukasiewicz conjunctions."
+    );
+
     public static final Option WLA_GPP_EARLY_STOPPING = new Option(
         "gpp.earlyStopping",
         true,

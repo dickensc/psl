@@ -77,6 +77,25 @@ public abstract class InferenceTest {
         inferDB.close();
     }
 
+//    @Test
+//    public void godelNegationTest() {
+//        Options.GodelNegation.set(true);
+//        Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.set(true);
+//        Options.INFERENCE_NORMALIZE_WEIGHTS.set(false);
+//        TestModel.ModelInformation info = TestModel.getModel();
+//        List<Rule> rules = info.model.getRules();
+//        float weight = ((WeightedLogicalRule)rules.get(0)).getWeight();
+//        ((WeightedLogicalRule)rules.get(0)).setWeight(-1.0f * weight);
+//
+//        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+//        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+//        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+//
+//        inference.inference();
+//        inference.close();
+//        inferDB.close();
+//    }
+
     /**
      * Same as baseTest(), but using postgres.
      */

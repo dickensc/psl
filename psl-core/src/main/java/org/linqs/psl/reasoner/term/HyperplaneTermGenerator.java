@@ -33,6 +33,7 @@ import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.reasoner.function.HingeFunction;
 import org.linqs.psl.reasoner.function.LinearFunction;
 import org.linqs.psl.reasoner.function.MaxFunction;
+import org.linqs.psl.reasoner.function.MinFunction;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
@@ -169,7 +170,8 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             }
 
             // Non-negative functions have a hinge.
-            count = createLossTerm(newTerms, termStore, function instanceof HingeFunction, function.isSquared(), groundRule, hyperplanes);
+            count = createLossTerm(newTerms, termStore, function instanceof HingeFunction, function instanceof MaxFunction,
+                    function instanceof MinFunction, function.isSquared(), groundRule, hyperplanes);
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition(mergeConstants);
             GeneralFunction function = constraint.getFunction();
@@ -212,6 +214,10 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             n_hyperplanes = generalFunction.size();
             hyperplanes = new ArrayList<Hyperplane<V>>(generalFunction.size());
             sums = ((MaxFunction)generalFunction).getTerms();
+        } else if (generalFunction instanceof MinFunction) {
+            n_hyperplanes = generalFunction.size();
+            hyperplanes = new ArrayList<Hyperplane<V>>(generalFunction.size());
+            sums = ((MinFunction)generalFunction).getTerms();
         } else {
             throw new IllegalArgumentException();
         }
@@ -292,7 +298,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * @return the number of terms added to the supplied collection.
      */
     public abstract int createLossTerm(Collection<T> newTerms, TermStore<T, V> termStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, List<Hyperplane<V>> hyperplanes);
+            boolean isHinge, boolean isMax, boolean isMin, boolean isSquared, GroundRule groundRule, List<Hyperplane<V>> hyperplanes);
 
     /**
      * Create a hard constraint term, and add it to the collection of new terms.

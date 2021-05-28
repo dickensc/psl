@@ -53,9 +53,9 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
 
     @Override
     public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, List<Hyperplane<GroundAtom>> hyperplanes) {
+            boolean isHinge, boolean isMax, boolean isMin, boolean isSquared, GroundRule groundRule, List<Hyperplane<GroundAtom>> hyperplanes) {
         VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
-        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplanes));
+        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, isMax, isMin, hyperplanes));
         return 1;
     }
 

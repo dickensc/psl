@@ -58,7 +58,7 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
 
     @Override
     public int createLossTerm(Collection<DCDObjectiveTerm> newTerms, TermStore <DCDObjectiveTerm, GroundAtom> baseTermStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, List<Hyperplane<GroundAtom>> hyperplanes) {
+            boolean isHinge, boolean isMax, boolean isMin, boolean isSquared, GroundRule groundRule, List<Hyperplane<GroundAtom>> hyperplanes) {
         VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
         if (hyperplanes.size() != 1) {
             throw new UnsupportedOperationException("ADMM Terms do not support compositions of hyperplanes.");
