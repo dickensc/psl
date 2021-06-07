@@ -44,7 +44,7 @@ public class SGDInferenceTest extends InferenceTest {
     @Override
     public void initialValueTest() {
         // SGD Non-coordinate step.
-        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_LEARNING_RATE.set(1.0);
         Options.SGD_COORDINATE_STEP.set(false);
         super.initialValueTest();
 

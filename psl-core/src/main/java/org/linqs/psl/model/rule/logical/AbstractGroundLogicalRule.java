@@ -108,11 +108,11 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
             return function;
         } else if (negated && LukasiewiczNegation) {
-            function = new MinFunction(posLiterals.size() + negLiterals.size(), false, mergeConstants);
+            function = new MinFunction(2, false, mergeConstants);
 
             LinearFunction linearFunction = new LinearFunction(posLiterals.size() + negLiterals.size(), false, mergeConstants);
             for (int i = 0; i < posLiterals.size(); i++) {
-                linearFunction.add(1);
+                linearFunction.add(1.0f);
                 linearFunction.add(-1.0f, posLiterals.get(i));
             }
 
@@ -120,7 +120,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
                 linearFunction.add(1.0f, negLiterals.get(i));
             }
 
-            function.add(1.0f);
+            ((MinFunction)function).setConstant(1.0f);
             function.add(1.0f, linearFunction);
 
             return function;

@@ -36,6 +36,11 @@ public class MinFunction extends AbstractFunction {
         return constantTerms;
     }
 
+    public void setConstant(float value) {
+        constant = value;
+        ((LinearFunction)terms[0]).setConstant(constant);
+    }
+
     /**
      * Add a constant to the min.
      */
@@ -121,7 +126,7 @@ public class MinFunction extends AbstractFunction {
         string.append("Min {");
         string.append(constant);
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 1; i < size; i++) {
             GeneralFunction term = terms[i];
             float coefficient = coefficients[i];
 

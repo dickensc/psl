@@ -55,11 +55,13 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     private boolean mergeConstants;
     private boolean invertNegativeWeight;
     private boolean godelNegation;
+    private boolean lukasiewiczNegation;
 
     public HyperplaneTermGenerator(boolean mergeConstants) {
         this.mergeConstants = mergeConstants;
         invertNegativeWeight = Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.getBoolean();
         godelNegation = Options.GodelNegation.getBoolean();
+        lukasiewiczNegation = Options.LukasiewiczNegation.getBoolean();
     }
 
     @Override
@@ -84,7 +86,8 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
 
         // Invert negative Godel term weights once all Godel terms are grounded.
         for (WeightedRule rule : rules) {
-            if ((rule.getWeight() < 0) && (rule instanceof WeightedLogicalRule) && godelNegation) {
+            if ((rule.getWeight() < 0) && (rule instanceof WeightedLogicalRule)
+                    && (godelNegation || lukasiewiczNegation)) {
                 rule.setWeight(-1.0f * rule.getWeight());
             }
         }

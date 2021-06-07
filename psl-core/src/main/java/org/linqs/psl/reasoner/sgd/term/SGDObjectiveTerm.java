@@ -348,14 +348,16 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         StringBuilder builder = new StringBuilder();
 
-        if (size.length > 1) {
+        builder.append(rule.getWeight());
+        builder.append(" * ");
+
+        if (size.length > 1 && max) {
             builder.append("max{");
+        } else if (size.length > 1 && min) {
+            builder.append("min{");
         }
 
         for (int i=0; i < size.length; i++) {
-            builder.append(rule.getWeight());
-            builder.append(" * ");
-
             if (hinge) {
                 builder.append("max(0.0, ");
             } else {
@@ -386,14 +388,15 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
             builder.append(")");
 
-            if (squared) {
-                builder.append(" ^2");
-            }
             builder.append(", ");
         }
 
         if (size.length > 1) {
             builder.append("}");
+        }
+
+        if (squared) {
+            builder.append(" ^2");
         }
 
         return builder.toString();
