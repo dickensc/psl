@@ -78,8 +78,12 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     }
 
     public float evaluate(float[] variableValues) {
+        return evaluate(rule.getWeight(), variableValues);
+    }
+
+    public float evaluate(float weight, float[] variableValues) {
         float value = 0.0f;
-        float adjustedWeight = rule.getWeight() * c;
+        float adjustedWeight = weight * c;
 
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variableValues[variableIndexes[i]];
@@ -218,6 +222,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
 
         lagrange = volatileBuffer.getFloat();
+    }
+
+    public WeightedRule getRule() {
+        return rule;
     }
 
     @Override

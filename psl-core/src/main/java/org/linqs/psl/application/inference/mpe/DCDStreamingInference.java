@@ -22,6 +22,7 @@ import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.DCDReasoner;
+import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
 import org.linqs.psl.reasoner.dcd.term.DCDStreamingTermStore;
 import org.linqs.psl.reasoner.dcd.term.DCDTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
@@ -72,5 +73,19 @@ public class DCDStreamingInference extends MPEInference {
     @Override
     protected void completeInitialize() {
         // Do nothing. Specifically, do not ground.
+    }
+
+    @Override
+    public double getIncompatibility(Rule rule) {
+        double incompatibility = 0.0;
+        float[] variableValues = ((DCDStreamingTermStore)termStore).getVariableValues();
+
+        for (DCDObjectiveTerm term : (DCDStreamingTermStore)termStore) {
+            if (term.getRule().equals(rule)) {
+                incompatibility += term.evaluate(1.0f, variableValues);
+            }
+        }
+
+        return incompatibility;
     }
 }

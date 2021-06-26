@@ -158,7 +158,7 @@ public abstract class WeightLearningTest {
      */
     @Test
     public void baseTest() {
-        Options.WLA_INFERENCE.set(SGDStreamingInference.class.getName());
+//        Options.WLA_INFERENCE.set(SGDStreamingInference.class.getName());
 
         WeightLearningApplication weightLearner = getWLA();
         weightLearner.learn();

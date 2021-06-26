@@ -31,8 +31,7 @@ import java.util.List;
  * An {@link AbstractGroundArithmeticRule} that is unweighted, i.e., it is a hard
  * constraint that must always hold.
  */
-public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
-        implements UnweightedGroundRule {
+public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule implements UnweightedGroundRule {
 
     protected UnweightedGroundArithmeticRule(UnweightedArithmeticRule rule, List<Float> coefficients,
             List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
@@ -47,30 +46,6 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
     @Override
     public UnweightedRule getRule() {
         return (UnweightedRule) rule;
-    }
-
-    @Override
-    public float getInfeasibility() {
-        float sum = 0.0f;
-        for (int i = 0; i < coefficients.length; i++) {
-            // Skip any grounding only predicates.
-            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
-                continue;
-            }
-
-            sum += coefficients[i] * atoms[i].getValue();
-        }
-
-        switch (comparator) {
-            case EQ:
-                return Math.abs(sum - constant);
-            case GTE:
-                return -1.0f * Math.min(sum - constant, 0.0f);
-            case LTE:
-                return Math.max(sum - constant, 0.0f);
-            default:
-                throw new IllegalStateException("Unrecognized comparator: " + comparator);
-        }
     }
 
     @Override

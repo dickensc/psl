@@ -49,4 +49,19 @@ public interface GroundRule {
      * Get a to string for the base of the rule without weight or square.
      */
     public String baseToString();
+
+    /**
+     * Returns the incompatibility of the truth values of this GroundRule's
+     * {@link GroundAtom GroundAtoms}.
+     * <p>
+     * Specifically, returns the distance between the value of the rule's
+     * functional definition and that function's nearest satisified value.
+     * <p>
+     * Incompatibility is always non-negative.
+     *
+     * @return the incompatibility of the current truth values
+     */
+    public float getIncompatibility();
+
+    public float getIncompatibility(GroundAtom replacementAtom, float replacementValue);
 }

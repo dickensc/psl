@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.model.rule;
 
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 
 public interface UnweightedGroundRule extends GroundRule {
@@ -32,17 +31,4 @@ public interface UnweightedGroundRule extends GroundRule {
      * may need direct access to these terms.
      */
     public ConstraintTerm getConstraintDefinition(boolean mergeConstants);
-
-    /**
-     * Returns the infeasibility of the truth values of this GroundRule's
-     * {@link GroundAtom GroundAtoms}.
-     * <p>
-     * Specifically, returns the distance between the value of the constraint's
-     * functional definition and that function's nearest feasible value.
-     * <p>
-     * Infeasibility is always non-negative.
-     *
-     * @return the infeasibility of the current truth values
-     */
-    public float getInfeasibility();
 }

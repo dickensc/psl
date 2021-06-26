@@ -201,17 +201,17 @@ public class GroundRules {
     }
 
     /**
-     * Computes the Euclidean norm of the infeasibilities of an iterable container
+     * Computes the Euclidean norm of the incompatibilities of an iterable container
      * of {@link UnweightedGroundRule GroundConstraintRules}.
      *
      * @param groundRules  the GroundConstraintRules
-     * @return the Euclidean norm of the infeasibilities
-     * @see UnweightedGroundRule#getInfeasibility()
+     * @return the Euclidean norm of the incompatibilities
+     * @see UnweightedGroundRule#getIncompatibility()
      */
     public static double getInfeasibilityNorm(Iterable<UnweightedGroundRule> groundRules) {
         double inf, norm = 0.0;
         for (UnweightedGroundRule groundRule : groundRules) {
-            inf = groundRule.getInfeasibility();
+            inf = groundRule.getIncompatibility();
             norm += inf * inf;
         }
         return Math.sqrt(norm);

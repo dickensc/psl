@@ -18,6 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -106,6 +107,39 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
     public List<GroundRule> negate() {
         // TODO(eriq)
         throw new UnsupportedOperationException("Negating arithmetic rules not yet supported.");
+    }
+
+    @Override
+    public float getIncompatibility() {
+        return getIncompatibility(null, 0.0f);
+    }
+
+    @Override
+    public float getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+        float sum = 0.0f;
+        for (int i = 0; i < coefficients.length; i++) {
+            // Skip any grounding only predicates.
+            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
+                continue;
+            }
+
+            if (atoms[i] == replacementAtom) {
+                sum += coefficients[i] * replacementValue;
+            } else {
+                sum += coefficients[i] * atoms[i].getValue();
+            }
+        }
+
+        switch (comparator) {
+            case EQ:
+                return Math.abs(sum - constant);
+            case GTE:
+                return -1.0f * Math.min(sum - constant, 0.0f);
+            case LTE:
+                return Math.max(sum - constant, 0.0f);
+            default:
+                throw new IllegalStateException("Unrecognized comparator: " + comparator);
+        }
     }
 
     @Override

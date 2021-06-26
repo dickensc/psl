@@ -216,6 +216,16 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
             List<GroundAtom> negativeAtoms, String name);
 
     @Override
+    public float getIncompatibility() {
+        return dissatisfaction.getValue();
+    }
+
+    @Override
+    public float getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+        return dissatisfaction.getValue(replacementAtom, replacementValue);
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (other == this) {
             return true;

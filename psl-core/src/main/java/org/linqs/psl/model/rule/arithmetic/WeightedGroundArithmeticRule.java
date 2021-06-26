@@ -88,32 +88,9 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     }
 
     @Override
-    public float getIncompatibility() {
-        return getIncompatibility(null, 0.0f);
-    }
-
-    @Override
     public float getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
-        float sum = 0.0f;
-        for (int i = 0; i < coefficients.length; i++) {
-            // Skip any grounding only predicates.
-            if (atoms[i].getPredicate() instanceof GroundingOnlyPredicate) {
-                continue;
-            }
-
-            if (atoms[i] == replacementAtom) {
-                sum += coefficients[i] * replacementValue;
-            } else {
-                sum += coefficients[i] * atoms[i].getValue();
-            }
-        }
-        sum -= constant;
-
-        if (FunctionComparator.GTE.equals(comparator)) {
-            sum *= -1.0f;
-        }
-
-        return (float)((isSquared()) ? Math.pow(Math.max(sum, 0.0f), 2) : Math.max(sum, 0.0f));
+        float incompatibility = super.getIncompatibility(replacementAtom, replacementValue);
+        return (float)((isSquared()) ? Math.pow(incompatibility, 2) : incompatibility);
     }
 
     @Override

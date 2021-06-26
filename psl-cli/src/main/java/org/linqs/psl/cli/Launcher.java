@@ -157,7 +157,7 @@ public class Launcher {
             } else {
                 UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
                 row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
-                satisfaction = 1.0 - unweightedGroundRule.getInfeasibility();
+                satisfaction = 1.0 - unweightedGroundRule.getIncompatibility();
             }
 
             if (includeSatisfaction) {

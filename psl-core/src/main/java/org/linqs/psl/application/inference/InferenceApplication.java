@@ -22,9 +22,10 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.UnweightedRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.reasoner.InitialValue;
@@ -330,6 +331,19 @@ public abstract class InferenceApplication implements ModelApplication {
                 rules.set(i, ((UnweightedRule)rules.get(i)).relax(weight, relaxationSquared));
             }
         }
+    }
+
+    /**
+     * Get incompatibility of provided rule
+     */
+    public double getIncompatibility(Rule rule) {
+        double incompatibility = 0.0;
+
+        for (GroundRule groundRule : groundRuleStore.getGroundRules(rule)) {
+            incompatibility += groundRule.getIncompatibility();
+        }
+
+        return incompatibility;
     }
 
     /**

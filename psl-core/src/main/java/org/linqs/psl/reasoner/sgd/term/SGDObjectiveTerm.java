@@ -75,8 +75,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     }
 
     public float evaluate(float[] variableValues) {
+        return evaluate(rule.getWeight(), variableValues);
+    }
+
+    public float evaluate(float weight, float[] variableValues) {
         float dot = dot(variableValues);
-        float weight = rule.getWeight();
 
         if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
@@ -157,6 +160,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
 
         return bitSize / 8;
+    }
+
+    public WeightedRule getRule() {
+        return rule;
     }
 
     /**

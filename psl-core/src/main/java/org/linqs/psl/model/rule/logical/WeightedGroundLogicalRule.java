@@ -69,16 +69,6 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     }
 
     @Override
-    public float getIncompatibility() {
-        return dissatisfaction.getValue();
-    }
-
-    @Override
-    public float getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
-        return dissatisfaction.getValue(replacementAtom, replacementValue);
-    }
-
-    @Override
     public String toString() {
         return "" + getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
     }

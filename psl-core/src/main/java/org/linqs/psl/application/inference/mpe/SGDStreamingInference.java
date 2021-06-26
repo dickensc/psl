@@ -19,9 +19,12 @@ package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
 import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
@@ -72,5 +75,19 @@ public class SGDStreamingInference extends MPEInference {
     @Override
     protected void completeInitialize() {
         // Do nothing else. Specifically, do not ground.
+    }
+
+    @Override
+    public double getIncompatibility(Rule rule) {
+        double incompatibility = 0.0;
+        float[] variableValues = ((SGDStreamingTermStore)termStore).getVariableValues();
+
+        for (SGDObjectiveTerm term : (SGDStreamingTermStore)termStore) {
+            if (term.getRule().equals(rule)) {
+                incompatibility += term.evaluate(1.0f, variableValues);
+            }
+        }
+
+        return incompatibility;
     }
 }
