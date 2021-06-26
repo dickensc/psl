@@ -22,8 +22,11 @@ import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModel;
+import org.linqs.psl.application.inference.mpe.ADMMInference;
+import org.linqs.psl.application.inference.mpe.SGDStreamingInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
@@ -155,6 +158,8 @@ public abstract class WeightLearningTest {
      */
     @Test
     public void baseTest() {
+        Options.WLA_INFERENCE.set(SGDStreamingInference.class.getName());
+
         WeightLearningApplication weightLearner = getWLA();
         weightLearner.learn();
         weightLearner.close();
