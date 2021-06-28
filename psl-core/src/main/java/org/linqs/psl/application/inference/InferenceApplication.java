@@ -334,7 +334,7 @@ public abstract class InferenceApplication implements ModelApplication {
     }
 
     /**
-     * Get incompatibility of provided rule
+     * Get incompatibility of provided rule.
      */
     public double getIncompatibility(Rule rule) {
         double incompatibility = 0.0;
@@ -344,6 +344,13 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         return incompatibility;
+    }
+
+    /**
+     * Get count of rule.
+     */
+    public double count(Rule rule) {
+        return groundRuleStore.count(rule);
     }
 
     /**

@@ -320,7 +320,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
     protected double[] computeScalingFactor() {
         double [] factor = new double[mutableRules.size()];
         for (int i = 0; i < factor.length; i++) {
-            factor[i] = Math.max(1.0, inference.getGroundRuleStore().count(mutableRules.get(i)));
+            factor[i] = scaleGradient? Math.max(1.0, inference.count(mutableRules.get(i))): 1.0;
         }
 
         return factor;

@@ -90,4 +90,17 @@ public class SGDStreamingInference extends MPEInference {
 
         return incompatibility;
     }
+
+    @Override
+    public double count(Rule rule) {
+        double count = 0.0;
+
+        for (SGDObjectiveTerm term : (SGDStreamingTermStore)termStore) {
+            if (term.getRule().equals(rule)) {
+                count += 1.0;
+            }
+        }
+
+        return count;
+    }
 }
